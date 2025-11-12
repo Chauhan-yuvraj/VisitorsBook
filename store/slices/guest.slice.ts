@@ -8,21 +8,16 @@ import { getStoredGuests, setStoredGuests } from "@/services/guest.service"
 interface guestState {
     guest: Guest[]
     error: string
+    selectedGuest: Guest | null;
     loading: 'idle' | 'pending' | 'succeeded' | 'failed'
 }
 // Define the sample guest data
-const INITIAL_SAMPLE_GUEST: Guest = {
-    id: '999', // Must have an ID
-    name: "Dr. Sample User",
-    position: "Initial Test Data",
-    // Using a placeholder image URL
-    img: "https://via.placeholder.com/150/008080/FFFFFF?text=Initial"
-};
 
 const initialState: guestState = {
     // Initialize the guest array with one default guest
-    guest: [INITIAL_SAMPLE_GUEST],
+    guest: [],
     error: '',
+    selectedGuest: null,
     loading: 'idle'
 }
 
@@ -69,6 +64,12 @@ const guestSlice = createSlice({
     name: 'guest',
     initialState,
     reducers: {
+        setSelectedGuest: (state, action: PayloadAction<Guest>) => {
+            state.selectedGuest = action.payload
+        },
+        clearSelectedGuest: (state) => {
+            state.selectedGuest = null
+        }
     },
     extraReducers: (builder) => {
         // 1. Handle Fetch Guests (Loading state)
@@ -101,6 +102,7 @@ const guestSlice = createSlice({
             })
     }
 })
+export const { setSelectedGuest, clearSelectedGuest } = guestSlice.actions
 
 export default guestSlice.reducer
 

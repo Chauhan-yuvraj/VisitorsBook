@@ -1,31 +1,37 @@
 // components/guestCard.tsx
-import { Image, Text, View } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
 import { Guest } from "@/store/types/guest.type"; // Import the type
 
 interface GuestCardProps {
   guest: Guest;
+  onSelect: (guest: Guest) => void;
+  isSelected: boolean; // Prop to highlight the selected card
 }
-
-export default function GuestCard({ guest }: GuestCardProps) {
-  // Determine the image source (Note: If 'img' holds a local path, you need proper resolution logic)
-  // For simplicity, we assume 'img' is a remote URL here, or we use a static fallback.
+export default function GuestCard({
+  guest,
+  onSelect,
+  isSelected,
+}: GuestCardProps) {
   const imageSource = { uri: guest.img };
-  // If you need to handle local images from a path:
-  // const imageSource = guest.img.startsWith('@/') ? require(guest.img) : { uri: guest.img };
 
   return (
-    <View className="flex justify-center rounded-lg items-center gap-y-2 bg-white p-4 w-40 h-60 shadow-lg">
-      <Image
-        source={imageSource}
-        className="w-24 h-24 rounded-full border-2 border-green-500"
-      />
-      <Text className="text-base font-semibold text-green-600 text-center">
-        {guest.name}
-      </Text>
-      <Text className="text-sm text-gray-500 text-center">
-        {guest.position}
-      </Text>
-    </View>
+    <TouchableOpacity onPress={() => onSelect(guest)}>
+      <View
+        className={`flex justify-center w-56 rounded-lg items-center gap-y-2 p-4 shadow-lg ${
+          isSelected ? "border border-green-400" : ""
+        }`}
+      >
+        <Image source={imageSource} className="w-48 h-48 rounded-xl" />
+        <View className="bg-white w-full rounded-md">
+          <Text className="text-lg font-semibold text-green-600 text-center">
+            {guest.name}
+          </Text>
+          <Text className="text-sm text-gray-500 text-center">
+            {guest.position}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 }

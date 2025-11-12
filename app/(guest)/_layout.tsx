@@ -1,9 +1,10 @@
-import { Stack, useRouter } from "expo-router";
-import { Text, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // Import an icon library for a clean button
+import { Stack } from "expo-router";
+import { Text } from "react-native";
+// Import the new button component
+import CreateGuestButton from "@/components/CreateGuestButton"; 
 
 export default function GuestLayout() {
-  const router = useRouter();
+  // REMOVE: const router = useRouter(); // NO LONGER NEEDED HERE
 
   return (
     <Stack
@@ -21,29 +22,17 @@ export default function GuestLayout() {
               Select the Guest
             </Text>
           ),
-          // --- ADD BUTTON HERE ---
-          headerRight: () => (
-            <TouchableOpacity
-              // Navigate to the create guest screen
-              // Assuming your file path is (guest)/createGuest.tsx
-              onPress={() => router.push("/(guest)/CreateGuest")}
-              style={{ marginRight: 15 }}
-            >
-              {/* Use a simple plus icon */}
-              <Ionicons name="add-circle-outline" size={30} color="#000" />
-            </TouchableOpacity>
-          ),
-          // ------------------------
+          // Use the isolated component here
+          headerRight: () => <CreateGuestButton />, 
         }}
       />
 
       <Stack.Screen
-        name="createGuest"
+        // FIX: Name MUST match the file name's exported component name or file name
+        name="CreateGuest" 
         options={{
           headerTitle: "Add New Guest",
-          // Optionally hide the headerRight button on this screen
           headerRight: () => null,
-          // You might want to customize the back button behavior/text here too
         }}
       />
     </Stack>

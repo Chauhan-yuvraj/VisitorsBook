@@ -16,6 +16,7 @@ import { AppDispatch } from "@/store/store";
 import * as ImagePicker from "expo-image-picker"; // Import the image picker
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView as ContextSafeAreaView } from "react-native-safe-area-context"; // Recommended for modern Expo
+import { router } from "expo-router";
 
 // Define the type for a Guest before the ID is assigned
 type NewGuestData = Omit<Guest, "id">;
@@ -50,11 +51,10 @@ export default function CreateGuestScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8, // Reduced quality for faster upload/storage
+      quality: 0.8,
     });
 
     if (!result.canceled) {
-      // result.assets[0].uri is the local URI of the selected image
       setLocalImageUri(result.assets[0].uri);
     }
   };
@@ -83,6 +83,7 @@ export default function CreateGuestScreen() {
         setName("");
         setPosition("");
         setLocalImageUri(null); // Clear image preview
+        router.replace("/(guest)/selectGuest");
       })
       .catch((error) => {
         Alert.alert("Error", error || "Could not save guest to local storage.");
@@ -93,12 +94,9 @@ export default function CreateGuestScreen() {
 
   return (
     <Background image={require("@/assets/images/background.jpg")}>
-      <SafeViewComponent className="flex-1 p-6">
-        <Text className="text-3xl font-bold text-white mb-8">
-          Add New Guest
-        </Text>
+      <SafeViewComponent className="flex-1 p-6 justify-center items-center">
 
-        <View className="bg-white/90 p-6 rounded-xl shadow-xl">
+        <View className="bg-white/90 p-6  rounded-xl shadow-xl min-w-96">
           <Text className="text-gray-700 font-semibold mb-1">Name:</Text>
           <TextInput
             className="border border-gray-300 p-3 rounded-lg mb-4 bg-white text-gray-800"
