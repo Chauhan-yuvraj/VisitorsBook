@@ -1,12 +1,21 @@
-import { Text, View } from 'react-native';
+import { View, Image, Pressable } from "react-native";
+import { useRouter } from "expo-router";
 
 export default function HomeScreen() {
+  const router = useRouter();
+
   return (
-   <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-xl font-bold text-blue-500">
-        Welcome to Nativewind!
-      </Text>
+    <View className="flex-1">
+      <Pressable
+        className="flex-1"
+        onPress={() => router.push("/landingPage")} // navigates to app/next.tsx
+      >
+        <Image
+          source={require("@/assets/images/bg.jpg")}
+          className="w-full h-full"
+          resizeMode="cover"
+        />
+      </Pressable>
     </View>
   );
 }
-
