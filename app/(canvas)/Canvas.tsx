@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import React, { useRef } from "react";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import Background from "@/components/ui/background";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SelectGuestCard from "@/components/SelectGuestCard";
@@ -12,8 +12,10 @@ import DrawingCanvas, { DrawingCanvasRef } from "@/components/ui/DrawingCanavs";
 import SignatureCanvas, {
   SignatureCanvasRef,
 } from "@/components/SignatureCanvas"; // Import SignatureCanvasRef
+import { saveRecord } from "@/store/slices/records.slice";
 
 export default function CanvasScreen() {
+  const dispatch = useAppDispatch(); // <-- Initialize dispatch
   const { selectedGuest } = useAppSelector((state) => state.guest);
 
   // Ref for the main drawing canvas
@@ -39,26 +41,47 @@ export default function CanvasScreen() {
     canvasRef.current?.redo();
   };
 
-  const handleSubmit = () => {
-    // 1. Get drawing data from the main canvas
-    const drawingPaths = canvasRef.current?.getPaths();
-
-    // 2. Get signature data
-    const signaturePaths = signatureRef.current?.getSignature();
+  const handleSubmit = async () => {
+    const signaturePaths = signatureRef.current?.getSignature() || [];
     const hasSignature = signatureRef.current?.hasSignature();
+    const canvasPages = canvasRef.current?.getAllPages();
 
-    // Basic Validation: Ensure a signature exists
-    if (!hasSignature || signaturePaths?.length === 0) {
-      console.warn("Submission failed: Please provide a signature.");
-      // In a real app, you would show a Toast or Alert here.
+    if (!selectedGuest || selectedGuest.name === "No Guest Selected") {
+      console.warn("Submission failed: Please select a guest first.");
       return;
     }
 
-    console.log("Submitting Feedback and Signature:");
-    console.log("Guest:", selectedGuest?.name);
-    console.log("Drawing Path Count:", drawingPaths?.length);
-    console.log("Signature Path Count:", signaturePaths?.length);
+    if (!hasSignature || signaturePaths?.length === 0) {
+      console.warn("Submission failed: Please provide a signature.");
+      return;
+    }
 
+    if (!canvasPages || canvasPages.length === 0) {
+      console.warn("Submission failed: Canvas pages data is missing.");
+      return;
+    }
+
+    // Dispatch the Redux thunk to handle serialization and saving
+    dispatch(
+      saveRecord({
+        guestData: {
+          name: selectedGuest.name,
+          position: selectedGuest.position,
+        },
+        canvasPages: canvasPages,
+        signaturePaths: signaturePaths,
+      })
+    )
+      .unwrap() // Handle the promise result for success/failure feedback
+      .then(() => {
+        console.log("Feedback successfully saved via Redux!");
+        // Clear UI after successful save
+        canvasRef.current?.clear();
+        signatureRef.current?.clear();
+      })
+      .catch((error) => {
+        console.error("Failed to save feedback record:", error);
+      });
   };
 
   return (

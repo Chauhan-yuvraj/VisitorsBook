@@ -25,7 +25,7 @@ export default function LoginPage() {
   const handleLogin = () => {
     dispatch(login({ username, password }));
     if (username === "admin" && password === "1234" && isAuthenticated) {
-      router.push("/");
+      router.push("/(admin)/records");
     } else Alert.alert("Error", "Invalid credentials");
   };
 

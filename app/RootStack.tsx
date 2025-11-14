@@ -9,8 +9,6 @@ import {
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 
-// This component ensures the Stack and ThemeProvider are tightly coupled 
-// and isolated from the main root layout's exports.
 function RootStack() {
   const colorScheme = useColorScheme();
 
@@ -20,6 +18,7 @@ function RootStack() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(guest)" options={{ headerShown: false }} />
         <Stack.Screen name="(canvas)" options={{ headerShown: false }} />
+        <Stack.Screen name="(admin)" options={{ headerShown: false }} />
 
         <Stack.Screen
           name="modal"
@@ -27,7 +26,7 @@ function RootStack() {
         />
       </Stack>
       {/* Move StatusBar here */}
-      <StatusBar style="auto" /> 
+      <StatusBar style="auto" />
     </ThemeProvider>
   );
 }

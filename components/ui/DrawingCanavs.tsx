@@ -12,7 +12,7 @@ interface PathData {
   strokeWidth: number;
 }
 
-interface CanvasPage {
+export interface CanvasPage {
   id: string;
   paths: PathData[];
   undonePaths: PathData[];

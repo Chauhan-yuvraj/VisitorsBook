@@ -5,7 +5,7 @@ import { Canvas, Path, Skia, SkPath } from "@shopify/react-native-skia";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 
-interface PathData {
+export interface PathData {
   path: SkPath;
 }
 
@@ -15,7 +15,7 @@ export interface SignatureCanvasRef {
   hasSignature: () => boolean;
 }
 
-const SignatureCanvas = forwardRef<SignatureCanvasRef, {}>((props, ref) => {
+const SignatureCanvas = forwardRef<SignatureCanvasRef, object>((props, ref) => {
   const [paths, setPaths] = useState<PathData[]>([]);
   const [currentPath, setCurrentPath] = useState<SkPath | null>(null);
 
