@@ -1,29 +1,83 @@
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import React from "react";
-import { Pen, Eraser, RotateCw, Trash2, RotateCcw } from "lucide-react-native";
+import { IconButton } from "react-native-paper";
 import { tools } from "@/data/Canvas";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setTool } from "@/store/slices/canvas.slice";
 
-const iconMap: Record<string, React.ElementType> = {
+import { Pen, Eraser, RotateCw, Trash2, RotateCcw } from "lucide-react-native";
+
+const LucideIconMap: Record<string, React.ElementType> = {
   pen: Pen,
   eraser: Eraser,
-  undo: RotateCw,
-  redu: RotateCcw,
+  undo: RotateCcw,
+  redu: RotateCw,
   clear: Trash2,
 };
 
-export default function SelectTool() {
+// Define Props Interface for SelectTool
+interface SelectToolProps {
+    onUndo: () => void;
+    onClear: () => void;
+    onRedo: () => void; // New prop for Redo
+}
+
+// Update the component signature to accept props
+export default function SelectTool({ onUndo, onClear, onRedo }: SelectToolProps) {
+  const dispatch = useAppDispatch();
+  const selectedTool = useAppSelector((state) => state.canvas.selectedTool);
+
+  // Function to handle the actual button press logic
+  const handlePress = (tool: string) => {
+    // 1. Check for utility actions (Undo, Clear, Redo)
+    if (tool === 'undo') {
+        onUndo();
+    } else if (tool === 'clear') {
+        onClear();
+    } else if (tool === 'redu') {
+        onRedo();
+    } else {
+        // 2. If it's a primary tool (pen, eraser, etc.), dispatch the change
+        dispatch(setTool(tool));
+    }
+  };
+
   return (
-    <View className="flex flex-row flex-wrap gap-4">
+    <View className="flex flex-row flex-wrap gap-2">
       {tools.map((tool) => {
-        const Icon = iconMap[tool];
+        const IconComponent = LucideIconMap[tool];
+        if (!IconComponent) return null;
+
+        // Only primary tools should be visually selected (pen, eraser)
+        // Utility buttons (undo, clear, redu) do not maintain a 'selected' state
+        const isPrimaryTool = (tool !== 'undo' && tool !== 'clear' && tool !== 'redu');
+        const isSelected = isPrimaryTool && tool === selectedTool;
+        
+        // Use different styling for utility buttons (less prominent selection)
+        const isUtility = !isPrimaryTool;
+
+        // Define colors based on selection/utility
+        const backgroundColor = isSelected ? "#10b981" : (isUtility ? "#f3f4f6" : "#e5e7eb"); // green-500, gray-100 (utility), or gray-200
+        const iconColor = isSelected ? "#fff" : (isUtility ? "#4b5563" : "#000"); // White, gray (utility), or Black
+        const borderColor = isSelected ? "#047857" : (isUtility ? "#d1d5db" : "#d1d5db");
+
         return (
-          <Pressable
+          <IconButton
             key={tool}
-            className="bg-gray-200 p-3 rounded-lg"
-            onPress={() => console.log(tool)}
-          >
-            <Icon size={24} color="#000" />
-          </Pressable>
+            size={24}
+            icon={() => <IconComponent size={24} color={iconColor} />}
+            containerColor={backgroundColor}
+            iconColor={iconColor}
+            rippleColor="rgba(0, 0, 0, 0.1)"
+            onPress={() => handlePress(tool)} // Use the new handler
+            style={{
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: borderColor,
+              // Utility buttons might have a smaller shadow or none
+              elevation: isSelected ? 4 : (isUtility ? 1 : 0), 
+            }}
+          />
         );
       })}
     </View>

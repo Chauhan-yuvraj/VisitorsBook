@@ -16,5 +16,4 @@ export const mode: string[] = [
     'mic',
     'text',
     'canvas',
-    // Add more modes as needed
 ];

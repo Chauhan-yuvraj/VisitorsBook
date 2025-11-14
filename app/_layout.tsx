@@ -1,39 +1,25 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+// visitors-book/app/_layout.tsx
+
 import { Provider } from "react-redux";
 import "react-native-reanimated";
+import { PaperProvider } from "react-native-paper";
 
-import { store } from "@/store/store"; // create this
+import { store } from "@/store/store";
 import "./global.css";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+// Import the component containing Stack and ThemeProvider
+import RootStack from "./RootStack";
 
 export const unstable_settings = {
   anchor: "(tabs)",
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
+    // Redux Provider MUST be the outermost wrapper
     <Provider store={store}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(guest)" options={{ headerShown: false }} />
-          <Stack.Screen name="(canvas)" options={{ headerShown: false }} />
-
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <PaperProvider>
+        <RootStack />
+      </PaperProvider>
     </Provider>
   );
 }
