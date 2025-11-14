@@ -1,162 +1,348 @@
-import { View, Text, FlatList, StyleSheet, Pressable } from "react-native";
-import React, { useEffect } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Pressable,
+  Image,
+  ScrollView,
+} from "react-native";
+import React, { useEffect, useState, memo, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchRecords, deleteRecord } from "@/store/slices/records.slice";
-
 import { SafeAreaView } from "react-native-safe-area-context";
 import Background from "@/components/ui/background";
-import { Trash2 } from "lucide-react-native";
+import { Trash2, Eye } from "lucide-react-native";
 import { FeedbackRecord } from "@/services/feedback.service";
+import RecordDetailModal from "@/components/RecordDetailModal";
+import { Canvas, Path, Skia, rect } from "@shopify/react-native-skia";
 
-// Helper component for displaying a single record
-const RecordCard: React.FC<{ record: FeedbackRecord }> = ({ record }) => {
+// --- Constants for Table Layout ---
+const COL_WIDTHS = {
+  IMAGE: 150,
+  DETAILS: 250,
+  PREVIEW: 200,
+  ACTIONS: 200,
+  DATETIME: 200,
+};
+const PREVIEW_SIZE = 150;
+
+// Skia path deserialization helper
+const createSkPathFromSvg = (svgString: string) => {
+  return Skia.Path.MakeFromSVGString(svgString);
+};
+
+// Calculate bounds of all paths and return scale/offset to fit in preview
+const calculateTransform = (paths: any[], previewSize: number) => {
+  if (!paths || paths.length === 0) return { scale: 1, offsetX: 0, offsetY: 0 };
+
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+
+  paths.forEach((pathData) => {
+    const path = createSkPathFromSvg(pathData.svg);
+    if (!path) return;
+
+    const bounds = path.computeTightBounds();
+    if (!bounds) return;
+
+    minX = Math.min(minX, bounds.x);
+    minY = Math.min(minY, bounds.y);
+    maxX = Math.max(maxX, bounds.x + bounds.width);
+    maxY = Math.max(maxY, bounds.y + bounds.height);
+  });
+
+  if (!isFinite(minX)) return { scale: 1, offsetX: 0, offsetY: 0 };
+
+  const width = maxX - minX;
+  const height = maxY - minY;
+
+  // Add padding
+  const padding = 10;
+  const availableSize = previewSize - padding * 2;
+
+  // Calculate scale to fit
+  const scale = Math.min(availableSize / width, availableSize / height);
+
+  // Center the drawing
+  const scaledWidth = width * scale;
+  const scaledHeight = height * scale;
+  const offsetX = (previewSize - scaledWidth) / 2 - minX * scale;
+  const offsetY = (previewSize - scaledHeight) / 2 - minY * scale;
+
+  return { scale, offsetX, offsetY };
+};
+
+// --- Small Preview Component ---
+const DrawingPreview: React.FC<{
+  record: FeedbackRecord;
+  type: "drawing" | "signature";
+}> = memo(
+  ({ record, type }) => {
+    const data = type === "drawing" ? record.pages[0]?.paths : record.signature;
+    const pathColor =
+      type === "signature" ? "#000000" : data?.[0]?.color || "#4B5563";
+
+    const { scale, offsetX, offsetY } = useMemo(
+      () => calculateTransform(data, PREVIEW_SIZE),
+      [data]
+    );
+
+    if (!data || data.length === 0) {
+      return (
+        <Text className="text-[10px] text-gray-400 text-center mt-3">N/A</Text>
+      );
+    }
+
+    return (
+      <View
+        className="bg-white rounded-sm border border-gray-300 overflow-hidden"
+        style={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE }}
+      >
+        <Canvas style={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE }}>
+          {data.map((pathData, index) => {
+            const path = createSkPathFromSvg(pathData.svg);
+            if (!path) return null;
+
+            // Create a transformed path
+            const transformedPath = path.copy();
+            transformedPath.transform([
+              scale,
+              0,
+              offsetX,
+              0,
+              scale,
+              offsetY,
+              0,
+              0,
+              1,
+            ]);
+
+            return (
+              <Path
+                key={index}
+                path={transformedPath}
+                color={
+                  type === "signature" ? "#000000" : pathData.color || pathColor
+                }
+                style="stroke"
+                strokeWidth={
+                  (pathData.strokeWidth || 3) *
+                  Math.max(0.5, Math.min(1, scale))
+                }
+                strokeCap="round"
+                strokeJoin="round"
+              />
+            );
+          })}
+        </Canvas>
+      </View>
+    );
+  },
+  (prevProps, nextProps) => prevProps.record.id === nextProps.record.id
+);
+
+DrawingPreview.displayName = "DrawingPreview";
+
+// --- Table Row Component ---
+const RecordRow: React.FC<{
+  record: FeedbackRecord;
+  onView: (record: FeedbackRecord) => void;
+}> = ({ record, onView }) => {
   const dispatch = useAppDispatch();
 
   const handleDelete = () => {
-    // Confirmation dialog is highly recommended here in a real app
     dispatch(deleteRecord(record.id));
   };
 
   const formatDate = (isoString: string) => {
-    return new Date(isoString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
+    const date = new Date(isoString);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
-    });
+    })}`;
   };
 
   return (
-    <View style={styles.card}>
-      <View style={styles.infoContainer}>
-        <Text style={styles.guestName}>{record.guestName}</Text>
-        <Text style={styles.guestPosition}>{record.guestPosition}</Text>
-        <Text style={styles.metadata}>
-          Saved: {formatDate(record.timestamp)}
+    <View className="flex-row items-center bg-white border-b border-gray-100 py-2 px-1">
+      {/* 1. Image */}
+      <View style={{ width: COL_WIDTHS.IMAGE }}>
+        <Image
+          source={{ uri: record.guestImgUri }}
+          className="w-32 h-32 rounded-md bg-gray-300"
+        />
+      </View>
+
+      {/* 2. Details (Name, Position) */}
+      <View className="flex-1">
+        <Text
+          className="text-2xl font-semibold text-gray-900"
+          numberOfLines={1}
+        >
+          {record.guestName}
         </Text>
-        <Text style={styles.metadata}>
-          Pages: {record.pages.length} | Signature:{" "}
-          {record.signature.length > 0 ? "Yes" : "No"}
+        <Text className="text-md text-gray-600" numberOfLines={1}>
+          {record.guestPosition}
         </Text>
       </View>
 
-      <Pressable onPress={handleDelete} style={styles.deleteButton}>
-        <Trash2 size={20} color="#EF4444" />
-      </Pressable>
+      {/* 3. Drawing Preview */}
+      <View
+        style={{ width: COL_WIDTHS.PREVIEW }}
+        className="items-center justify-center"
+      >
+        <DrawingPreview record={record} type="drawing" />
+      </View>
 
-      {/* TODO: Add a button here to view the actual drawing */}
+      {/* 4. Signature Preview */}
+      <View
+        style={{ width: COL_WIDTHS.PREVIEW }}
+        className="items-center justify-center"
+      >
+        <DrawingPreview record={record} type="signature" />
+      </View>
+
+      {/* 5. Date/Time */}
+      <View style={{ width: COL_WIDTHS.DATETIME }} className="pl-2">
+        <Text className="text-xs text-gray-700">
+          {formatDate(record.timestamp)}
+        </Text>
+      </View>
+
+      {/* 6. Actions (View, Delete) */}
+      <View
+        style={{ width: COL_WIDTHS.ACTIONS }}
+        className="flex-row justify-around items-center"
+      >
+        <Pressable
+          onPress={() => onView(record)}
+          className="p-1.5 rounded bg-green-500/10 active:bg-green-500/20"
+        >
+          <Eye size={24} color="#22C55E" />
+        </Pressable>
+        <Pressable
+          onPress={handleDelete}
+          className="p-1.5 rounded bg-red-500/10 active:bg-red-500/20"
+        >
+          <Trash2 size={24} color="#EF4444" />
+        </Pressable>
+      </View>
     </View>
   );
 };
 
+// --- Table Header ---
+const TableHeader = () => (
+  <View className="flex-row bg-gray-200 py-2.5 px-1 border-b-2 border-gray-300 rounded-t-xl">
+    <View style={{ width: COL_WIDTHS.IMAGE }}>
+      <Text className="text-xs font-bold text-gray-700 text-center">Img</Text>
+    </View>
+    <View style={{ flex: 1 }}>
+      <Text className="text-xs font-bold text-gray-700 text-center">
+        Details
+      </Text>
+    </View>
+    <View style={{ width: COL_WIDTHS.PREVIEW }}>
+      <Text className="text-xs font-bold text-gray-700 text-center">
+        Feedback
+      </Text>
+    </View>
+    <View style={{ width: COL_WIDTHS.PREVIEW }}>
+      <Text className="text-xs font-bold text-gray-700 text-center">Sig</Text>
+    </View>
+    <View style={{ width: COL_WIDTHS.DATETIME }} className="pl-2">
+      <Text className="text-xs font-bold text-gray-700">Time</Text>
+    </View>
+    <View style={{ width: COL_WIDTHS.ACTIONS }}>
+      <Text className="text-xs font-bold text-gray-700 text-center">
+        Actions
+      </Text>
+    </View>
+  </View>
+);
+
+// --- Main Screen Component ---
 export default function RecordsScreen() {
   const dispatch = useAppDispatch();
   const { records, status, error } = useAppSelector((state) => state.records);
 
-  // Fetch records on initial load
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<FeedbackRecord | null>(
+    null
+  );
+
+  const handleViewRecord = (record: FeedbackRecord) => {
+    setSelectedRecord(record);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedRecord(null);
+  };
+
   useEffect(() => {
     if (status === "idle") {
       dispatch(fetchRecords());
     }
   }, [status, dispatch]);
 
-  // --- Render Content based on Status ---
-
   let content;
   if (status === "loading") {
-    content = <Text style={styles.statusText}>Loading records...</Text>;
+    content = (
+      <Text className="text-gray-300 text-center mt-12 text-base">
+        Loading records...
+      </Text>
+    );
   } else if (status === "failed") {
     content = (
-      <Text style={[styles.statusText, { color: "#EF4444" }]}>
+      <Text className="text-red-500 text-center mt-12 text-base">
         Error: {error}
       </Text>
     );
   } else if (records.length === 0) {
-    content = <Text style={styles.statusText}>No feedback records found.</Text>;
+    content = (
+      <Text className="text-gray-300 text-center mt-12 text-base">
+        No feedback records found.
+      </Text>
+    );
   } else {
     content = (
-      <FlatList
-        data={records}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <RecordCard record={item} />}
-        contentContainerStyle={styles.listContent}
-      />
+      <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
+        <View className="flex-1" style={{ minWidth: 600 }}>
+          <TableHeader />
+          <FlatList
+            data={records}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <RecordRow record={item} onView={handleViewRecord} />
+            )}
+            contentContainerStyle={{ paddingBottom: 10 }}
+          />
+        </View>
+      </ScrollView>
     );
   }
 
   return (
-    <Background image={require("@/assets/images/background.jpg")}>
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.header}>Saved Visitor Feedback</Text>
-        <View style={styles.contentWrapper}>{content}</View>
-      </SafeAreaView>
-    </Background>
+    <>
+      <Background image={require("@/assets/images/background.jpg")}>
+        <SafeAreaView className="flex-1 p-4">
+          <View className="flex-1 bg-white/10 rounded-xl overflow-hidden">
+            {content}
+          </View>
+        </SafeAreaView>
+      </Background>
+
+      {selectedRecord && (
+        <RecordDetailModal
+          record={selectedRecord}
+          visible={modalVisible}
+          onClose={handleCloseModal}
+        />
+      )}
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  contentWrapper: {
-    flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 12,
-    padding: 10,
-  },
-  statusText: {
-    color: "#D1D5DB",
-    textAlign: "center",
-    marginTop: 50,
-    fontSize: 16,
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  card: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  infoContainer: {
-    flex: 1,
-  },
-  guestName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#1F2937",
-  },
-  guestPosition: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 5,
-  },
-  metadata: {
-    fontSize: 12,
-    color: "#9CA3AF",
-  },
-  deleteButton: {
-    padding: 8,
-    marginLeft: 10,
-    borderRadius: 4,
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-  },
-});

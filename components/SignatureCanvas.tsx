@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   canvasWrapper: {
-    height: 100,
+    height: 150,
     backgroundColor: "#FFFFFF",
     borderRadius: 6,
     borderWidth: 2,

@@ -1,9 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { 
-    getFeedbackRecords, 
-    saveFeedbackRecord, 
-    deleteFeedbackRecord, 
-    FeedbackRecord 
+import {
+  getFeedbackRecords,
+  saveFeedbackRecord,
+  deleteFeedbackRecord,
+  FeedbackRecord
 } from "@/services/feedback.service";
 import { CanvasPage } from "@/components/ui/DrawingCanavs";
 import { PathData as SignaturePathData } from "@/components/SignatureCanvas";
@@ -35,15 +35,15 @@ export const fetchRecords = createAsyncThunk(
 export const saveRecord = createAsyncThunk(
   'records/saveRecord',
   async (
-    data: { 
-      guestData: { name: string, position: string },
+    data: {
+      guestData: { name: string, position: string, img: string },
       canvasPages: CanvasPage[],
       signaturePaths: SignaturePathData[]
     }
   ) => {
     const newRecord = await saveFeedbackRecord(
-      data.guestData, 
-      data.canvasPages, 
+      data.guestData,
+      data.canvasPages,
       data.signaturePaths
     );
     return newRecord;
@@ -87,7 +87,7 @@ const recordsSlice = createSlice({
       .addCase(saveRecord.fulfilled, (state, action: PayloadAction<FeedbackRecord>) => {
         state.records.push(action.payload);
       })
-      
+
       // Delete Record
       .addCase(deleteRecord.fulfilled, (state, action: PayloadAction<string>) => {
         const deletedId = action.payload;

@@ -23,6 +23,7 @@ export interface FeedbackRecord {
     id: string;
     guestName: string;
     guestPosition: string;
+    guestImgUri: string;
     timestamp: string; // ISO date string
     pages: SerializableCanvasPage[];
     signature: SerializablePathData[];
@@ -72,7 +73,7 @@ export async function getFeedbackRecords(): Promise<FeedbackRecord[]> {
  * @param signaturePaths - Array of signature path data (unserialized).
  */
 export async function saveFeedbackRecord(
-    guestData: { name: string, position: string },
+    guestData: { name: string, position: string, img: string },
     canvasPages: CanvasPage[],
     signaturePaths: SignaturePathData[]
 ): Promise<FeedbackRecord> {
@@ -89,6 +90,7 @@ export async function saveFeedbackRecord(
         id: Date.now().toString(), // Unique ID based on timestamp
         guestName: guestData.name,
         guestPosition: guestData.position,
+        guestImgUri: guestData.img,
         timestamp: new Date().toISOString(),
         pages: serializablePages,
         signature: serializableSignature,
