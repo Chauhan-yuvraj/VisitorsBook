@@ -2,20 +2,16 @@ import React, { useState } from "react";
 import {
   Modal,
   View,
-  Text,
   StyleSheet,
   Pressable,
   ScrollView,
-  Dimensions,
   Image,
 } from "react-native";
-import { X, FileText, ChevronLeft, ChevronRight } from "lucide-react-native";
+import { X,  ChevronLeft, ChevronRight } from "lucide-react-native";
 import { Canvas, Path, Skia } from "@shopify/react-native-skia";
-import { FeedbackRecord } from "@/services/feedback.service";
 import { ThemedText } from "./themed-text"; // Assuming you have this component for text styling
+import { FeedbackRecord } from "@/store/types/feedback";
 
-const { width } = Dimensions.get("window");
-const CANVAS_SIZE = width * 0.9 - 40; // Adjust based on padding/margins
 
 interface RecordDetailModalProps {
   record: FeedbackRecord;

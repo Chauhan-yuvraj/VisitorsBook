@@ -2,35 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CanvasPage } from "@/components/ui/DrawingCanavs"; // Multi-page structure
 import { PathData as SignaturePathData } from "@/components/SignatureCanvas"; // Signature path structure
 import { SkPath } from "@shopify/react-native-skia";
+import { FeedbackRecord, SerializableCanvasPage, SerializablePathData } from '@/store/types/feedback';
+import { STORAGE_KEY } from '@/constants/constant';
 
-
-// --- TYPES FOR STORAGE ---
-
-// Simplified SkPath storage structure (SkPath object is not JSON serializable)
-interface SerializablePathData {
-    svg: string; // Storing SkPath as SVG string
-    color?: string;
-    strokeWidth?: number;
-}
-
-interface SerializableCanvasPage {
-    id: string;
-    paths: SerializablePathData[];
-    // UndonePaths are temporary and generally not saved permanently
-}
-
-export interface FeedbackRecord {
-    id: string;
-    guestName: string;
-    guestPosition: string;
-    guestImgUri: string;
-    timestamp: string; // ISO date string
-    pages: SerializableCanvasPage[];
-    signature: SerializablePathData[];
-}
-
-// --- STORAGE KEY ---
-const STORAGE_KEY = '@VisitorFeedbackRecords';
 
 // --- HELPER FUNCTIONS FOR SERIALIZATION ---
 
@@ -52,10 +26,6 @@ const serializeSignaturePath = (pathData: SignaturePathData): SerializablePathDa
 
 
 // --- SERVICE FUNCTIONS ---
-
-/**
- * Loads all existing feedback records from AsyncStorage.
- */
 export async function getFeedbackRecords(): Promise<FeedbackRecord[]> {
     try {
         const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
@@ -66,12 +36,6 @@ export async function getFeedbackRecords(): Promise<FeedbackRecord[]> {
     }
 }
 
-/**
- * Saves a new feedback record.
- * @param guestData - Guest name and position.
- * @param canvasPages - Array of multi-page drawing data (unserialized).
- * @param signaturePaths - Array of signature path data (unserialized).
- */
 export async function saveFeedbackRecord(
     guestData: { name: string, position: string, img: string },
     canvasPages: CanvasPage[],
@@ -106,10 +70,6 @@ export async function saveFeedbackRecord(
     return newRecord;
 }
 
-
-/**
- * Deletes a record by its ID.
- */
 export async function deleteFeedbackRecord(id: string): Promise<boolean> {
     const existingRecords = await getFeedbackRecords();
     const updatedRecords = existingRecords.filter(record => record.id !== id);
@@ -122,9 +82,6 @@ export async function deleteFeedbackRecord(id: string): Promise<boolean> {
     return true;
 }
 
-/**
- * Utility to clear all stored feedback records (for development/testing).
- */
 export async function clearAllFeedbackRecords(): Promise<void> {
     await AsyncStorage.removeItem(STORAGE_KEY);
 }

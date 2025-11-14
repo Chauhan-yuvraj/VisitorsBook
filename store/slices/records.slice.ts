@@ -1,12 +1,13 @@
+// records.slice.ts (Updated)
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import {
   getFeedbackRecords,
   saveFeedbackRecord,
   deleteFeedbackRecord,
-  FeedbackRecord
 } from "@/services/feedback.service";
 import { CanvasPage } from "@/components/ui/DrawingCanavs";
 import { PathData as SignaturePathData } from "@/components/SignatureCanvas";
+import { FeedbackRecord } from '../types/feedback';
 
 interface RecordsState {
   records: FeedbackRecord[];
@@ -21,7 +22,6 @@ const initialState: RecordsState = {
 };
 
 // --- ASYNC THUNKS ---
-
 // Thunk to load all records from storage
 export const fetchRecords = createAsyncThunk(
   'records/fetchRecords',
@@ -62,12 +62,25 @@ export const deleteRecord = createAsyncThunk(
   }
 );
 
-// --- SLICE DEFINITION ---
+// NEW THUNK: To toggle the featured status and persist it
+const toggleFeature = createAsyncThunk(
+  'records/toggleFeature',
+  async ({ id, currentFeaturedStatus }: { id: string, currentFeaturedStatus: boolean }) => {
+    const newFeaturedStatus = !currentFeaturedStatus;
 
+
+    console.log(`Simulating update for record ${id}: featured=${newFeaturedStatus}`);
+
+    return { id, featured: newFeaturedStatus };
+  }
+);
+
+// --- SLICE DEFINITION ---
 const recordsSlice = createSlice({
   name: 'records',
   initialState,
-  reducers: {},
+  reducers: {
+  },
   extraReducers: (builder) => {
     builder
       // Fetch Records
@@ -92,8 +105,23 @@ const recordsSlice = createSlice({
       .addCase(deleteRecord.fulfilled, (state, action: PayloadAction<string>) => {
         const deletedId = action.payload;
         state.records = state.records.filter(record => record.id !== deletedId);
+      })
+
+      // Toggle Feature (Handled by the new thunk)
+      .addCase(toggleFeature.fulfilled, (state, action: PayloadAction<{ id: string, featured: boolean }>) => {
+        const { id, featured } = action.payload;
+        const index = state.records.findIndex(record => record.id === id);
+        if (index !== -1) {
+          state.records[index].featured = featured;
+        }
+      })
+      // Optional: Handle rejected state for user feedback
+      .addCase(toggleFeature.rejected, (state, action) => {
+        console.error("Failed to update feature status:", action.error.message);
+        // Maybe display an error message to the user here
       });
   },
 });
 
 export default recordsSlice.reducer;
+export { toggleFeature };

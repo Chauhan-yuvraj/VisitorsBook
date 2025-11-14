@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { Text } from "react-native";
 // Import the new button component
-import CreateGuestButton from "@/components/CreateGuestButton"; 
+import CreateGuestButton from "@/components/CreateGuestButton";
 
 export default function GuestLayout() {
   // REMOVE: const router = useRouter(); // NO LONGER NEEDED HERE
@@ -22,17 +22,6 @@ export default function GuestLayout() {
               Select the Guest
             </Text>
           ),
-          // Use the isolated component here
-          headerRight: () => <CreateGuestButton />, 
-        }}
-      />
-
-      <Stack.Screen
-        // FIX: Name MUST match the file name's exported component name or file name
-        name="CreateGuest" 
-        options={{
-          headerTitle: "Add New Guest",
-          headerRight: () => null,
         }}
       />
     </Stack>

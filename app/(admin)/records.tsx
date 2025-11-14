@@ -1,86 +1,42 @@
+// RecordsScreen.tsx (Updated)
+
 import {
   View,
   Text,
   FlatList,
-  StyleSheet,
   Pressable,
   Image,
   ScrollView,
+  TextInput,
 } from "react-native";
 import React, { useEffect, useState, memo, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchRecords, deleteRecord } from "@/store/slices/records.slice";
+import {
+  fetchRecords,
+  deleteRecord,
+  toggleFeature, // <-- Import the new thunk
+} from "@/store/slices/records.slice";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Background from "@/components/ui/background";
-import { Trash2, Eye } from "lucide-react-native";
-import { FeedbackRecord } from "@/services/feedback.service";
+import { Trash2, Eye, Search } from "lucide-react-native";
 import RecordDetailModal from "@/components/RecordDetailModal";
-import { Canvas, Path, Skia, rect } from "@shopify/react-native-skia";
+import { Canvas, Path } from "@shopify/react-native-skia";
+import {
+  PREVIEW_SIZE,
+  MIN_TABLE_WIDTH,
+} from "@/constants/constant";
+import { calculateTransform, createSkPathFromSvg } from "@/utils/Result.utils";
+import { TableHeader } from "@/components/TableHeader";
+import { FeedbackRecord } from "@/store/types/feedback";
+import { Switch } from "react-native-paper";
 
-// --- Constants for Table Layout ---
-const COL_WIDTHS = {
-  IMAGE: 150,
-  DETAILS: 250,
-  PREVIEW: 200,
-  ACTIONS: 200,
-  DATETIME: 200,
-};
-const PREVIEW_SIZE = 150;
-
-// Skia path deserialization helper
-const createSkPathFromSvg = (svgString: string) => {
-  return Skia.Path.MakeFromSVGString(svgString);
-};
-
-// Calculate bounds of all paths and return scale/offset to fit in preview
-const calculateTransform = (paths: any[], previewSize: number) => {
-  if (!paths || paths.length === 0) return { scale: 1, offsetX: 0, offsetY: 0 };
-
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-
-  paths.forEach((pathData) => {
-    const path = createSkPathFromSvg(pathData.svg);
-    if (!path) return;
-
-    const bounds = path.computeTightBounds();
-    if (!bounds) return;
-
-    minX = Math.min(minX, bounds.x);
-    minY = Math.min(minY, bounds.y);
-    maxX = Math.max(maxX, bounds.x + bounds.width);
-    maxY = Math.max(maxY, bounds.y + bounds.height);
-  });
-
-  if (!isFinite(minX)) return { scale: 1, offsetX: 0, offsetY: 0 };
-
-  const width = maxX - minX;
-  const height = maxY - minY;
-
-  // Add padding
-  const padding = 10;
-  const availableSize = previewSize - padding * 2;
-
-  // Calculate scale to fit
-  const scale = Math.min(availableSize / width, availableSize / height);
-
-  // Center the drawing
-  const scaledWidth = width * scale;
-  const scaledHeight = height * scale;
-  const offsetX = (previewSize - scaledWidth) / 2 - minX * scale;
-  const offsetY = (previewSize - scaledHeight) / 2 - minY * scale;
-
-  return { scale, offsetX, offsetY };
-};
-
-// --- Small Preview Component ---
+// ... (DrawingPreview component remains unchanged) ...
 const DrawingPreview: React.FC<{
   record: FeedbackRecord;
   type: "drawing" | "signature";
 }> = memo(
   ({ record, type }) => {
+    // ... (implementation unchanged)
     const data = type === "drawing" ? record.pages[0]?.paths : record.signature;
     const pathColor =
       type === "signature" ? "#000000" : data?.[0]?.color || "#4B5563";
@@ -165,10 +121,20 @@ const RecordRow: React.FC<{
     })}`;
   };
 
+  const toggleFeatured = () => {
+    // Dispatch the new thunk, passing necessary information
+    dispatch(
+      toggleFeature({
+        id: record.id,
+        currentFeaturedStatus: record.featured || false,
+      })
+    );
+  };
+
   return (
-    <View className="flex-row items-center bg-white border-b border-gray-100 py-2 px-1">
+    <View className="flex-row items-center justify-evenly w-full bg-white border-b border-gray-100 py-2 px-1">
       {/* 1. Image */}
-      <View style={{ width: COL_WIDTHS.IMAGE }}>
+      <View>
         <Image
           source={{ uri: record.guestImgUri }}
           className="w-32 h-32 rounded-md bg-gray-300"
@@ -176,7 +142,7 @@ const RecordRow: React.FC<{
       </View>
 
       {/* 2. Details (Name, Position) */}
-      <View className="flex-1">
+      <View>
         <Text
           className="text-2xl font-semibold text-gray-900"
           numberOfLines={1}
@@ -189,33 +155,30 @@ const RecordRow: React.FC<{
       </View>
 
       {/* 3. Drawing Preview */}
-      <View
-        style={{ width: COL_WIDTHS.PREVIEW }}
-        className="items-center justify-center"
-      >
+      <View className="items-center justify-center">
         <DrawingPreview record={record} type="drawing" />
       </View>
 
       {/* 4. Signature Preview */}
-      <View
-        style={{ width: COL_WIDTHS.PREVIEW }}
-        className="items-center justify-center"
-      >
+      <View className="items-center justify-center">
         <DrawingPreview record={record} type="signature" />
       </View>
 
       {/* 5. Date/Time */}
-      <View style={{ width: COL_WIDTHS.DATETIME }} className="pl-2">
-        <Text className="text-xs text-gray-700">
+      <View className="pl-2">
+        <Text className="text-md text-gray-700">
           {formatDate(record.timestamp)}
         </Text>
       </View>
 
-      {/* 6. Actions (View, Delete) */}
-      <View
-        style={{ width: COL_WIDTHS.ACTIONS }}
-        className="flex-row justify-around items-center"
-      >
+      {/* 6. Display (Switch) */}
+      <View className="pl-2">
+        {/* The component re-renders when the state updates */}
+        <Switch value={record.featured} onValueChange={toggleFeatured} />
+      </View>
+
+      {/* 7. Actions (View, Delete) */}
+      <View className="flex-row justify-around items-center">
         <Pressable
           onPress={() => onView(record)}
           className="p-1.5 rounded bg-green-500/10 active:bg-green-500/20"
@@ -233,37 +196,7 @@ const RecordRow: React.FC<{
   );
 };
 
-// --- Table Header ---
-const TableHeader = () => (
-  <View className="flex-row bg-gray-200 py-2.5 px-1 border-b-2 border-gray-300 rounded-t-xl">
-    <View style={{ width: COL_WIDTHS.IMAGE }}>
-      <Text className="text-xs font-bold text-gray-700 text-center">Img</Text>
-    </View>
-    <View style={{ flex: 1 }}>
-      <Text className="text-xs font-bold text-gray-700 text-center">
-        Details
-      </Text>
-    </View>
-    <View style={{ width: COL_WIDTHS.PREVIEW }}>
-      <Text className="text-xs font-bold text-gray-700 text-center">
-        Feedback
-      </Text>
-    </View>
-    <View style={{ width: COL_WIDTHS.PREVIEW }}>
-      <Text className="text-xs font-bold text-gray-700 text-center">Sig</Text>
-    </View>
-    <View style={{ width: COL_WIDTHS.DATETIME }} className="pl-2">
-      <Text className="text-xs font-bold text-gray-700">Time</Text>
-    </View>
-    <View style={{ width: COL_WIDTHS.ACTIONS }}>
-      <Text className="text-xs font-bold text-gray-700 text-center">
-        Actions
-      </Text>
-    </View>
-  </View>
-);
-
-// --- Main Screen Component ---
+// ... (RecordsScreen component remains unchanged, as it uses the updated RecordRow) ...
 export default function RecordsScreen() {
   const dispatch = useAppDispatch();
   const { records, status, error } = useAppSelector((state) => state.records);
@@ -272,6 +205,7 @@ export default function RecordsScreen() {
   const [selectedRecord, setSelectedRecord] = useState<FeedbackRecord | null>(
     null
   );
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleViewRecord = (record: FeedbackRecord) => {
     setSelectedRecord(record);
@@ -288,6 +222,31 @@ export default function RecordsScreen() {
       dispatch(fetchRecords());
     }
   }, [status, dispatch]);
+
+  // Filter records based on the search query
+  const filteredRecords = useMemo(() => {
+    if (!searchQuery) {
+      return records;
+    }
+    const lowerCaseQuery = searchQuery.toLowerCase();
+
+    return records.filter((record) => {
+      // 1. Check Guest Name
+      if (record.guestName.toLowerCase().includes(lowerCaseQuery)) {
+        return true;
+      }
+      // 2. Check Guest Position
+      if (record.guestPosition.toLowerCase().includes(lowerCaseQuery)) {
+        return true;
+      }
+      // 3. Check Date/Time (format the timestamp for searching)
+      const dateString = new Date(record.timestamp).toLocaleString();
+      if (dateString.toLowerCase().includes(lowerCaseQuery)) {
+        return true;
+      }
+      return false;
+    });
+  }, [records, searchQuery]);
 
   let content;
   if (status === "loading") {
@@ -308,13 +267,19 @@ export default function RecordsScreen() {
         No feedback records found.
       </Text>
     );
+  } else if (filteredRecords.length === 0) {
+    content = (
+      <Text className="text-gray-300 text-center mt-12 text-base">
+        No results found for {searchQuery}.
+      </Text>
+    );
   } else {
     content = (
       <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1" style={{ minWidth: 600 }}>
+        <View className="flex-1" style={{ minWidth: MIN_TABLE_WIDTH }}>
           <TableHeader />
           <FlatList
-            data={records}
+            data={filteredRecords} // Use filtered list
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <RecordRow record={item} onView={handleViewRecord} />
@@ -329,9 +294,23 @@ export default function RecordsScreen() {
   return (
     <>
       <Background image={require("@/assets/images/background.jpg")}>
-        <SafeAreaView className="flex-1 p-4">
-          <View className="flex-1 bg-white/10 rounded-xl overflow-hidden">
-            {content}
+        <SafeAreaView className="flex-1 justify-start px-4 pb-4 pt-0">
+          <View className="flex-1 bg-white/10  rounded-xl overflow-hidden">
+            {/* Added mt-4 to provide spacing below the safe area */}
+            <View className="p-4 bg-white/5 rounded-t-xl">
+              <View className="flex-row items-center bg-white/90 p-3 rounded-lg border border-gray-300 shadow-md">
+                <Search size={20} color="#6B7280" className="mr-3" />
+                <TextInput
+                  placeholder="Search by name, position, or date..."
+                  placeholderTextColor="#6B7280"
+                  className="flex-1 text-gray-800 text-lg"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+            </View>
+            {/* --- Table Content Area --- */}
+            <View className="flex-1 overflow-hidden">{content}</View>
           </View>
         </SafeAreaView>
       </Background>
