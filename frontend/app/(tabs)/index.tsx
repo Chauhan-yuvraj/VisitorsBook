@@ -10,14 +10,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   // useEffect(() => {
-  //   // Add a small delay to ensure the Root Layout has fully mounted
-  //   // and initialized the router context before calling prefetch.
   //   const timeout = setTimeout(() => {
   //     console.log("Attempting to prefetch login page...");
   //     router.replace("/(admin)/Options");
   //   }, 100); // Wait r
 
-  //   // Cleanup the timeout if the component unmounts early
   //   return () => clearTimeout(timeout);
   // }, []);
 

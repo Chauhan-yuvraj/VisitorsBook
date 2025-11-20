@@ -19,3 +19,17 @@ export async function getRecordsFromAPI(): Promise<FeedbackRecord[]> {
     }
 
 }
+
+
+export async function deleteRecordFromAPI(id: string): Promise<void> {
+    try {
+        await API.delete(`/records/${id}`, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+    } catch (e) {
+        console.error("Failed to delete record from API:", e);
+        throw e;
+    }
+}

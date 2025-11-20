@@ -4,7 +4,7 @@ import {
 } from "@/services/feedback.service";
 
 import { FeedbackRecord, UserRecord, SerializablePathData, SerializableCanvasPage } from '../types/feedback';
-import { getRecordsFromAPI } from '@/services/records.service';
+import { deleteRecordFromAPI, getRecordsFromAPI } from '@/services/records.service';
 
 interface RecordsState {
   records: FeedbackRecord[];
@@ -41,7 +41,7 @@ export const saveRecord = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const { guestData, canvasPages, signaturePaths , visitType } = data;
+      const { guestData, canvasPages, signaturePaths, visitType } = data;
 
       const record = await saveUserRecord(guestData, canvasPages, signaturePaths, visitType);
       return record as FeedbackRecord;
@@ -57,6 +57,15 @@ export const saveRecord = createAsyncThunk(
       }
       return rejectWithValue(error.message);
     }
+  }
+);
+
+export const deleteRecord = createAsyncThunk(
+  'records/deleteRecord',
+  async (id: string) => {
+    // Implement delete logic here
+    const response = await deleteRecordFromAPI(id);
+    return response;
   }
 );
 
@@ -102,6 +111,15 @@ const recordsSlice = createSlice({
       .addCase(saveRecord.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload as string || action.error.message || null;
+      })
+      // Delete Record
+      .addCase(deleteRecord.fulfilled, (state, action: PayloadAction<void, string, { arg: string }>) => {
+        const idToDelete = action.meta.arg;
+        state.records = state.records.filter(record => record.id !== idToDelete);
+      })
+      .addCase(deleteRecord.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message || null;
       })
 
       // Toggle Feature
