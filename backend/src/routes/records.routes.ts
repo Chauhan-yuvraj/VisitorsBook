@@ -1,10 +1,7 @@
 import { Router } from "express";
-import express from "express";
-
-import { postVisitor } from "../controllers/Visitor.controller";
 import { deleteRecord, getRecords, postRecord } from "../controllers/Record.controller";
 
-const app = express();
+
 
 
 const router = Router();
