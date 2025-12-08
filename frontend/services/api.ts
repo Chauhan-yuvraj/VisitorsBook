@@ -1,10 +1,6 @@
 import axios, { AxiosRequestConfig } from "axios";
 import Constants from "expo-constants";
-// Platform import isn't strictly necessary if it's not being used inside the file
-// import { Platform } from "react-native"; 
 
-// 1. Ensure a fallback for the API URL is defined if Constants fails to load it,
-// guaranteeing baseURL is always a string with a scheme.
 const fallbackUrl = "http://localhost:3000/api";
 const apiUrl: string = (Constants.expoConfig?.extra?.apiUrl as string) || fallbackUrl;
 

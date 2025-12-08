@@ -29,7 +29,7 @@ export default function HomeScreen() {
           </View>
         </View>
         {/* Main Content Area */}
-        <View className="flex-1 justify-end  items-center w-full gap-y-12 px-4 ">
+        <View className="flex-1 justify-center  items-center w-full gap-y-12 px-4 ">
           <View>
             <LinearGradient
               colors={[
@@ -55,16 +55,16 @@ export default function HomeScreen() {
           </View>
           <View className="">
             <Buttons
-              text="FeedBack"
+              text="Get Started"
               onClick={() => router.push("/(canvas)/Canvas")}
             />
           </View>
         </View>
 
         {/* Parallax Row */}
-        <View className="">
+        {/* <View className="">
           <ParallaxRow />
-        </View>
+        </View> */}
       </SafeAreaView>
     </Background>
   );

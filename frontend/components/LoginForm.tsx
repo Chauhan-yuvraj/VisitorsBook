@@ -23,7 +23,7 @@ export default function LoginForm() {
   const onSubmit = (data: FormValues) => {
     console.log("Form Data:", data);
     // call your login API here
-    router.replace("/(admin)/Options");
+    router.replace("/(admin)/Dashboard");
   };
 
   return (

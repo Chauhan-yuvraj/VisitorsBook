@@ -1,21 +1,43 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
-import { LayoutGrid, Users, Send, PieChart, LogOut } from "lucide-react-native";
+import {
+  LayoutGrid,
+  Users,
+  Send,
+  PieChart,
+  LogOut,
+  UserRoundPen,
+} from "lucide-react-native";
+
+// Define the available tabs to avoid typos
+export type TabName =
+  | "Dashboard"
+  | "Employees"
+  | "Visitors"
+  | "Invites"
+  | "userForm"
+  | "Analytics";
 
 interface SidebarItemProps {
   icon: React.ComponentType<{ size: number; color: string }>;
   label: string;
   active?: boolean;
+  onPress: () => void; // Added onPress prop
 }
 
-const SidebarItem = ({ icon: Icon, label, active }: SidebarItemProps) => (
+const SidebarItem = ({
+  icon: Icon,
+  label,
+  active,
+  onPress,
+}: SidebarItemProps) => (
   <TouchableOpacity
+    onPress={onPress}
     className={`flex-row items-center px-4 py-3 rounded-xl mb-1 ${
       active ? "bg-gray-50" : "hover:bg-gray-50"
     }`}
   >
     <Icon size={20} color={active ? "#111827" : "#9CA3AF"} />
-    {/* Hidden on mobile, shown on tablet/desktop logic would be handled by parent layout styling */}
     <Text
       className={`ml-3 font-medium text-sm ${
         active ? "text-primary" : "text-gray-400"
@@ -29,9 +51,14 @@ const SidebarItem = ({ icon: Icon, label, active }: SidebarItemProps) => (
   </TouchableOpacity>
 );
 
-const Sidebar = () => {
+interface SidebarProps {
+  currentTab: TabName;
+  onNavigate: (tab: TabName) => void;
+}
+
+const Sidebar = ({ currentTab, onNavigate }: SidebarProps) => {
   return (
-    <View className="w-64 bg-surface border-r border-gray-100 flex-col justify-between pt-8 pb-8 hidden md:flex">
+    <View className="w-64 bg-surface border-r border-gray-100 flex-col justify-between pt-8 pb-8 hidden md:flex h-full">
       <View>
         {/* Logo */}
         <View className="flex-row items-center px-8 mb-8">
@@ -48,16 +75,47 @@ const Sidebar = () => {
 
         {/* Nav */}
         <View className="px-4">
-          <SidebarItem icon={LayoutGrid} label="Dashboard" active />
-          <SidebarItem icon={Users} label="Visitors Log" />
-          <SidebarItem icon={Send} label="Invites" />
-          <SidebarItem icon={PieChart} label="Analytics" />
+          <SidebarItem
+            icon={LayoutGrid}
+            label="Dashboard"
+            active={currentTab === "Dashboard"}
+            onPress={() => onNavigate("Dashboard")}
+          />
+          <SidebarItem
+            icon={UserRoundPen}
+            label="Employees"
+            active={currentTab === "Employees"}
+            onPress={() => onNavigate("Employees")}
+          />
+          <SidebarItem
+            icon={Users}
+            label="Visitors Log"
+            active={currentTab === "Visitors"}
+            onPress={() => onNavigate("Visitors")}
+          />
+          <SidebarItem
+            icon={Send}
+            label="Invites"
+            active={currentTab === "Invites"}
+            onPress={() => onNavigate("Invites")}
+          />
+          <SidebarItem
+            icon={PieChart}
+            label="Analytics"
+            active={currentTab === "Analytics"}
+            onPress={() => onNavigate("Analytics")}
+          />
         </View>
       </View>
 
       {/* Footer */}
       <View className="px-4">
-        <SidebarItem icon={LogOut} label="Log Out" />
+        {/* Logic for Logout usually doesn't change tabs, but calls an auth function */}
+        <SidebarItem
+          icon={LogOut}
+          label="Log Out"
+          onPress={() => console.log("Logout")}
+        />
       </View>
     </View>
   );
