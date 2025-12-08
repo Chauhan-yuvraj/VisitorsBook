@@ -23,8 +23,10 @@ router.post("/import", protect, authorize('hr', 'admin', 'executive'), BulkImpor
 
 router
   .route("/")
-  .get(protect, authorize('hr', 'admin', 'executive'), GetEmployees)   // GET all employees
-  .post(protect, authorize('hr', 'admin', 'executive'), PostEmployee); // Create employee
+  // .get(protect, authorize('hr', 'admin', 'executive'), GetEmployees)   // GET all employees
+  .get(GetEmployees)   // GET all employees
+  // .post(protect, authorize('hr', 'admin', 'executive'), PostEmployee); // Create employee
+  .post(PostEmployee); // Create employee
 
 router
   .route("/:id")

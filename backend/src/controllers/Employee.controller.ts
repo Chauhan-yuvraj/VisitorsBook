@@ -48,8 +48,14 @@ export const PostEmployee = async (req: Request, res: Response) => {
     try {
         const { name, email, phone, profileImgUri, department, jobTitle, role, isActive, password, timestamps } = req.body;
 
-        if (!name || !email || !phone || !password) {
-            return res.status(400).json({ message: "Name, email, phone, and password are required." });
+
+        if (!name || !email || !phone) {
+            return res.status(400).json({ message: "Name, email, and phone are required." });
+        }
+
+        let finalPassword = password;
+        if (!finalPassword) {
+            finalPassword = Math.random().toString(36).slice(-8); // auto password
         }
 
         const employee = await Employee.create({
