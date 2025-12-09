@@ -14,7 +14,7 @@ export type TabName =
   | "Dashboard"
   | "Employees"
   | "Visitors"
-  | "Invites"
+  | "Visits"
   | "userForm"
   | "Analytics";
 
@@ -89,15 +89,15 @@ const Sidebar = ({ currentTab, onNavigate }: SidebarProps) => {
           />
           <SidebarItem
             icon={Users}
-            label="Visitors Log"
+            label="Visitors"
             active={currentTab === "Visitors"}
             onPress={() => onNavigate("Visitors")}
           />
           <SidebarItem
             icon={Send}
-            label="Invites"
-            active={currentTab === "Invites"}
-            onPress={() => onNavigate("Invites")}
+            label="Visits"
+            active={currentTab === "Visits"}
+            onPress={() => onNavigate("Visits")}
           />
           <SidebarItem
             icon={PieChart}

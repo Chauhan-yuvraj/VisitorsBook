@@ -4,6 +4,7 @@ import guestReducer from "./slices/guest.slice";
 import canvasReducer from "./slices/canvas.slice";
 import recordsReducer from './slices/records.slice'; // <-- NEW IMPORT
 import employeesReducer from './slices/employees.slice'; // <-- NEW IMPORT
+import visitReducer from './slices/visit.slice';
 import { injectStore } from "@/services/api";
 
 export const store = configureStore({
@@ -13,6 +14,7 @@ export const store = configureStore({
         canvas: canvasReducer,
         records: recordsReducer,
         employees: employeesReducer, // <-- NEW SLICE
+        visits: visitReducer,
     },
 });
 

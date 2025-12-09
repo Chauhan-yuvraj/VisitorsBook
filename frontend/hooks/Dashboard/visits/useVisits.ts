@@ -1,0 +1,30 @@
+import { useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchVisitsThunk } from "@/store/slices/visit.slice";
+
+export const useVisits = () => {
+    const dispatch = useAppDispatch();
+    const { visits, loading, error } = useAppSelector((state) => state.visits);
+    const [searchQuery, setSearchQuery] = useState("");
+
+    useEffect(() => {
+        dispatch(fetchVisitsThunk({}));
+    }, [dispatch]);
+
+    const filteredVisits = visits.filter((visit) => {
+        const query = searchQuery.toLowerCase();
+        return (
+            visit.visitor.name.toLowerCase().includes(query) ||
+            visit.host.name.toLowerCase().includes(query) ||
+            visit.status.toLowerCase().includes(query)
+        );
+    });
+
+    return {
+        visits: filteredVisits,
+        loading: loading === 'pending',
+        error,
+        searchQuery,
+        setSearchQuery,
+    };
+};
