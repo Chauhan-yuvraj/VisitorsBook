@@ -9,7 +9,6 @@ export enum UserRole {
 
 export interface Employee {
   _id: string; // Changed from 'id' to '_id' to match API
-  id?: string; // Kept optional just in case
   name: string;
   email: string;
   phone?: string;
@@ -20,4 +19,19 @@ export interface Employee {
   status?: "Active" | "On Leave" | "Inactive"; // Optional if calculated on frontend
   profileImgUri?: string;
   createdAt?: string;
+}
+
+export type Guest = {
+  id?: string;
+  name: string,
+  position: string;
+  img: string
+}
+
+
+export interface Admin {
+  _id: string;
+  name: string;
+  email: string;
+  role: UserRole.ADMIN | string;
 }

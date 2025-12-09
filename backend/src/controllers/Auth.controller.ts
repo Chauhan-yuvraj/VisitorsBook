@@ -82,26 +82,26 @@ export const RefreshAccessToken = async (req: Request, res: Response): Promise<v
     let refreshToken = cookies?.jwt;
 
     // Mobile FallBack
-    if(!refreshToken && req.body.refreshToken) {
+    if (!refreshToken && req.body.refreshToken) {
       refreshToken = req.body.refreshToken;
     }
 
     const user = await Employee.findOne({ refreshToken }).exec();
 
-    if(!user){
-      res.clearCookie('jwt'), {
+    if (!user) {
+      res.clearCookie('jwt', {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict"
-      };
+      });
       res.status(403).json({ success: false, message: "Forbidden , invalid refresh token" });
       return;
     }
 
     jwt.verify(
-      refreshToken , process.env.REFRESH_TOKEN_SECRET as string,
+      refreshToken, process.env.JWT_REFRESH_SECRET as string,
       (err: any, decoded: any) => {
-        if(err || user._id.toString() !== decoded.id) {
+        if (err || user._id.toString() !== decoded.id) {
           res.status(403).json({ success: false, message: "Forbidden, token expired" });
           return;
         }
@@ -112,6 +112,6 @@ export const RefreshAccessToken = async (req: Request, res: Response): Promise<v
 
   } catch (err: any) {
     console.error("RefreshAccessToken Error:", err);
-    res.status(500).json({ success: false, message: "Internal server error" }); 
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 }

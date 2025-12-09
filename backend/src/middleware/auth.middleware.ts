@@ -9,33 +9,36 @@ interface DecodedToken {
 }
 
 export const protect = async (req: Request, res: Response, next: Function) => {
-    let token
+    let token;
 
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-        try {
-            token = req.headers.authorization.split(' ')[1]
-
-            const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as DecodedToken
-
-            const user = await Employee.findById(decoded.id).select('-password')
-
-            if (!user) {
-                res.status(401).json({ message: "Not authorized, user not found" });
-                return
-            }
-            req.user = user
-            next()
-        } catch (error) {
-              console.error("JWT Error:", error);
-            res.status(401).json({ message: "Not authorized, token failed" });
-        }
-        if (!token) {
-            res.status(401).json({ message: "Not authorized, no token" });
-        }
-    }else{
-        res.status(401).json({ message: "Not authorized, no token" });
+    if (req.headers.authorization?.startsWith("Bearer ")) {
+        token = req.headers.authorization.split(" ")[1];
     }
-}
+
+    if (!token) {
+        return res.status(401).json({ message: "Not authorized, no token" });
+    }
+
+    try {
+        const decoded = jwt.verify(
+            token,
+            process.env.JWT_ACCESS_SECRET!
+        ) as DecodedToken;
+
+        const user = await Employee.findById(decoded.id).select("-password");
+
+        if (!user) {
+            return res.status(401).json({ message: "Not authorized, user not found" });
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error("JWT Error:", error);
+        return res.status(401).json({ message: "Not authorized, token failed" });
+    }
+};
+
 
 export const authorize = (...roles:string[]) => {
     return (req: Request, res: Response, next: Function) => {

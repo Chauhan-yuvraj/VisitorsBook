@@ -4,7 +4,7 @@ module.exports = {
     name: "visitors-book",
     slug: "visitors-book",
     version: "1.0.0",
-    orientation: "landscape",
+    orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "visitorsbook",
     userInterfaceStyle: "automatic",

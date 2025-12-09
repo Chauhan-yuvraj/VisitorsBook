@@ -1,55 +1,99 @@
+import { Filter, Plus, Search } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  TextInput,
   ActivityIndicator,
+  Alert,
+  FlatList,
   Modal,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Search, Plus, Filter } from "lucide-react-native";
 
 import { useEmployees } from "@/hooks/Dashboard/employees/useEmployees";
-import { EmployeeCard } from "./EmployeeCard";
-import EmployeeForm from "./EmployeeForm";
-import { Employee } from "@/store/types/user";
 import { useAppDispatch } from "@/store/hooks";
 import {
   addEmployeeThunk,
+  deleteEmployeeThunk,
   fetchEmployeesThunk,
+  updateEmployeeThunk,
 } from "@/store/slices/employees.slice";
+import { Employee } from "@/store/types/user";
+import { EmployeeCard } from "./EmployeeCard";
+import EmployeeForm from "./EmployeeForm";
 
 export default function EmployeesList() {
   const dispatch = useAppDispatch();
   const { searchQuery, setSearchQuery, employees, loading } = useEmployees();
 
+  // Local state to manage modal visibility and selected employee
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
   );
 
+  /** Open form for creating a new employee */
   const openCreateForm = () => {
     setSelectedEmployee(null);
     setIsFormVisible(true);
   };
 
+  /** Delete employee and mark as inactive */
+  const deleteEmployee = async (employee: Employee) => {
+    // Show confirmation dialog
+    Alert.alert(
+      "Delete Employee",
+      `Are you sure you want to delete ${employee.name}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Mark employee as inactive
+              await dispatch(deleteEmployeeThunk(employee._id));
+              await dispatch(
+                updateEmployeeThunk({ ...employee, isActive: false })
+              );
+              dispatch(fetchEmployeesThunk()); // Refresh list
+            } catch (err) {
+              console.error("Delete error:", err);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  /** Open form for editing an existing employee */
   const openEditForm = (employee: Employee) => {
     setSelectedEmployee(employee);
     setIsFormVisible(true);
   };
 
+  /** Handle form submission for add/update */
   const handleFormSubmit = async (formData: Partial<Employee>) => {
     try {
       if (selectedEmployee) {
+        // Update existing employee
+        dispatch(
+          updateEmployeeThunk({ ...selectedEmployee, ...formData } as Employee)
+        );
         console.log("Updating:", selectedEmployee._id, formData);
       } else {
+        // Create new employee
         console.log("Creating:", formData);
         await dispatch(addEmployeeThunk(formData));
       }
 
       setIsFormVisible(false);
-      dispatch(fetchEmployeesThunk());
+      dispatch(fetchEmployeesThunk()); // Refresh list
     } catch (err) {
       console.error("Submit error:", err);
     }
@@ -75,7 +119,7 @@ export default function EmployeesList() {
         </TouchableOpacity>
       </View>
 
-      {/* Search */}
+      {/* Search Bar */}
       <View className="flex-row mb-6 gap-3">
         <View className="flex-1 flex-row items-center bg-white border border-gray-200 rounded-lg px-3 h-12">
           <Search size={20} color="#9CA3AF" />
@@ -92,7 +136,7 @@ export default function EmployeesList() {
         </TouchableOpacity>
       </View>
 
-      {/* List */}
+      {/* Employees List */}
       {loading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#000" />
@@ -102,7 +146,11 @@ export default function EmployeesList() {
           data={employees}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => (
-            <EmployeeCard item={item} onEdit={openEditForm} />
+            <EmployeeCard
+              item={item}
+              onEdit={openEditForm}
+              onDelete={deleteEmployee}
+            />
           )}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
@@ -114,7 +162,7 @@ export default function EmployeesList() {
         />
       )}
 
-      {/* Form Modal */}
+      {/* Modal Form */}
       <Modal
         visible={isFormVisible}
         animationType="slide"

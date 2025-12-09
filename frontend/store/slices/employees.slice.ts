@@ -1,7 +1,7 @@
 // store/slices/employees.slice.ts
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Employee } from "../types/user";
-import { addEmployee, getEmployees } from "@/services/employees.service";
+import { addEmployee, deleteEmployee, getEmployees, updateEmployee } from "@/services/employees.service";
 
 interface EmployeesState {
     employees: Employee[];
@@ -17,7 +17,7 @@ const initialState: EmployeesState = {
     loading: false
 }
 
-// Thunk
+// Thunks
 export const fetchEmployeesThunk = createAsyncThunk(
     'employees/fetchEmployees',
     async (_, { rejectWithValue }) => {
@@ -44,6 +44,31 @@ export const addEmployeeThunk = createAsyncThunk(
     }
 );
 
+export const updateEmployeeThunk = createAsyncThunk(
+    'employees/updateEmployee',
+    async (updatedEmployee: Employee, { rejectWithValue }) => {
+        try {
+            // Call service to update employee
+            const employee = await updateEmployee(updatedEmployee);
+            return employee;
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to update employee');
+        }
+    }
+);
+
+export const deleteEmployeeThunk = createAsyncThunk(
+    'employees/deleteEmployee',
+    async (employeeId: string, { rejectWithValue }) => {
+        try {
+            // Call service to delete employee
+            await deleteEmployee(employeeId);
+            return employeeId;
+        } catch (error: any) {
+            return rejectWithValue(error.message || 'Failed to delete employee');
+        }
+    }
+);
 // Slice
 const employeesSlice = createSlice({
     name: 'employees',
@@ -79,6 +104,35 @@ const employeesSlice = createSlice({
                 state.employees.push(action.payload);
             })
             .addCase(addEmployeeThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+                console.log("Redux Error:", action.payload);
+            })
+            .addCase(updateEmployeeThunk.pending, (state) => {
+                state.loading = true;
+                state.error = '';
+            })
+            .addCase(updateEmployeeThunk.fulfilled, (state, action: PayloadAction<Employee>) => {
+                state.loading = false;
+                const index = state.employees.findIndex(emp => emp._id === action.payload._id);
+                if (index !== -1) {
+                    state.employees[index] = action.payload;
+                }
+            })
+            .addCase(updateEmployeeThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+                console.log("Redux Error:", action.payload);
+            }).
+            addCase(deleteEmployeeThunk.pending, (state) => {
+                state.loading = true;
+                state.error = '';
+            })
+            .addCase(deleteEmployeeThunk.fulfilled, (state, action: PayloadAction<string>) => {
+                state.loading = false;
+                state.employees = state.employees.filter(emp => emp._id !== action.payload);
+            })
+            .addCase(deleteEmployeeThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
                 console.log("Redux Error:", action.payload);

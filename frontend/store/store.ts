@@ -4,6 +4,7 @@ import guestReducer from "./slices/guest.slice";
 import canvasReducer from "./slices/canvas.slice";
 import recordsReducer from './slices/records.slice'; // <-- NEW IMPORT
 import employeesReducer from './slices/employees.slice'; // <-- NEW IMPORT
+import { injectStore } from "@/services/api";
 
 export const store = configureStore({
     reducer: {
@@ -14,6 +15,8 @@ export const store = configureStore({
         employees: employeesReducer, // <-- NEW SLICE
     },
 });
+
+injectStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

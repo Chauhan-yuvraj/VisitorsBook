@@ -36,3 +36,22 @@ export const addEmployee = async (newEmployee: Partial<Employee>): Promise<Emplo
         throw error;
     }
 }
+
+export const updateEmployee = async (updatedEmployee: Employee): Promise<Employee> => {
+    try {
+        const response = await API.patch<{ success: boolean; data: Employee }>(`/employees/${updatedEmployee._id}`, updatedEmployee);
+        return response.data.data;
+    } catch (error) {
+        console.error('Failed to update employee:', error);
+        throw error;
+    }
+}
+
+export const deleteEmployee = async (employeeId: string): Promise<void> => {
+    try {
+        await API.delete(`/employees/${employeeId}`);
+    } catch (error) {
+        console.error('Failed to delete employee:', error);
+        throw error;
+    }
+}

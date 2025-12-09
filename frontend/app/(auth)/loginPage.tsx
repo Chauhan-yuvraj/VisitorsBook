@@ -1,6 +1,6 @@
 import { View, Text } from "react-native";
 import React from "react";
-import LoginForm from "@/components/LoginForm";
+import LoginForm from "@/components/auth/LoginForm";
 import Background from "@/components/Background";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";

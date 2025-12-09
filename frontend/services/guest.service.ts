@@ -1,38 +1,65 @@
-import { Guest } from "@/store/types/guest.type";
-import { Storage } from 'expo-storage'
+import { Visitor } from "@/store/types/visitor";
+import API from "./api";
 
-const STORAGE_KEY = 'guest_list';
+interface VisitorApiResponse {
+    success: boolean;
+    count: number;
+    data: Visitor[];
+}
 
+interface SingleVisitorApiResponse {
+    success: boolean;
+    data: Visitor;
+}
 
-/**
- * Reads the guest list from Expo Storage.
- * Handles parsing the JSON string back into a Guest array.
- */
-export const getStoredGuests = async (): Promise<Guest[]> => {
+export const getVisitors = async (): Promise<Visitor[]> => {
     try {
-        // Use ExpoStorage.getItem
-        const data = await Storage.getItem({ key: STORAGE_KEY });
-
-        if (data) {
-            // Data retrieved from storage is a string, must be parsed
-            return JSON.parse(data) as Guest[];
+        const response = await API.get<VisitorApiResponse>('/visitors');
+        if (response.data && Array.isArray(response.data.data)) {
+            return response.data.data;
         }
         return [];
-    } catch (e) {
-        console.error("Error reading Expo Storage:", e);
-        return []; // Return empty array on failure
+    } catch (error) {
+        console.error('Failed to fetch visitors:', error);
+        throw error;
     }
 };
 
-/**
- * Writes the current guest list array to Expo Storage.
- * Handles stringifying the Guest array for storage.
- */
-export const setStoredGuests = async (guests: Guest[]): Promise<void> => {
+export const addVisitor = async (newVisitor: Partial<Visitor>): Promise<Visitor> => {
     try {
-        const dataToStore = JSON.stringify(guests);
-        await Storage.setItem({ key: STORAGE_KEY, value: dataToStore });
-    } catch (e) {
-        console.error("Error writing Expo Storage:", e);
+        const response = await API.post<SingleVisitorApiResponse>('/visitors', newVisitor);
+        return response.data.data;
+    } catch (error) {
+        console.error('Failed to add visitor:', error);
+        throw error;
+    }
+};
+
+export const updateVisitor = async (updatedVisitor: Partial<Visitor> & { _id: string }): Promise<Visitor> => {
+    try {
+        const response = await API.patch<SingleVisitorApiResponse>(`/visitors/${updatedVisitor._id}`, updatedVisitor);
+        return response.data.data;
+    } catch (error) {
+        console.error('Failed to update visitor:', error);
+        throw error;
+    }
+};
+
+export const deleteVisitor = async (visitorId: string): Promise<void> => {
+    try {
+        await API.delete(`/visitors/${visitorId}`);
+    } catch (error) {
+        console.error('Failed to delete visitor:', error);
+        throw error;
+    }
+};
+
+export const getVisitor = async (visitorId: string): Promise<Visitor> => {
+    try {
+        const response = await API.get<SingleVisitorApiResponse>(`/visitors/${visitorId}`);
+        return response.data.data;
+    } catch (error) {
+        console.error('Failed to fetch visitor:', error);
+        throw error;
     }
 };

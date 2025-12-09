@@ -2,6 +2,8 @@ import { View } from "react-native";
 import { TextInput, Button, HelperText } from "react-native-paper";
 import { Controller, useForm } from "react-hook-form";
 import { router } from "expo-router";
+import { useAppDispatch } from "@/store/hooks";
+import { login } from "@/store/slices/auth.slice";
 
 type FormValues = {
   email: string;
@@ -9,21 +11,28 @@ type FormValues = {
 };
 
 export default function LoginForm() {
+  const dispatch = useAppDispatch();
+
   const {
     control,
     handleSubmit,
     formState: { errors },
   } = useForm<FormValues>({
     defaultValues: {
-      email: "yuvraj@example.com",
-      password: "Yuvraj@123",
+      email: "yuvraj.chauhan@abhyuday.in",
+      password: "abhyuday@123",
     },
   });
 
   const onSubmit = (data: FormValues) => {
-    console.log("Form Data:", data);
-    // call your login API here
-    router.replace("/(admin)/Dashboard");
+    dispatch(login(data))
+      .unwrap()
+      .then(() => {
+        router.replace("/(admin)/Dashboard");
+      })
+      .catch(() => {
+        alert("Invalid email or password");
+      });
   };
 
   return (
@@ -34,29 +43,18 @@ export default function LoginForm() {
         name="email"
         rules={{
           required: "Email is required",
-          pattern: {
-            value: /^\S+@\S+\.\S+$/,
-            message: "Enter a valid email",
-          },
+          pattern: { value: /^\S+@\S+\.\S+$/, message: "Enter a valid email" },
         }}
         render={({ field: { onChange, value } }) => (
           <>
             <TextInput
               label="Email"
               mode="outlined"
-              cursorColor="#555"
-              outlineColor="#555"
-              activeOutlineColor="black"
               value={value}
               onChangeText={onChange}
               autoCapitalize="none"
               keyboardType="email-address"
-              style={{
-                // marginBottom: 8,
-                minWidth: 300,
-                backgroundColor: "white",
-                color: "black",
-              }}
+              style={{ minWidth: 300, backgroundColor: "white" }}
             />
             {errors.email && (
               <HelperText type="error">{errors.email.message}</HelperText>
@@ -81,18 +79,10 @@ export default function LoginForm() {
             <TextInput
               label="Password"
               mode="outlined"
-              cursorColor="#555"
-              outlineColor="#555"
-              activeOutlineColor="black"
               value={value}
               secureTextEntry
               onChangeText={onChange}
-              style={{
-                // marginBottom: 8,
-                minWidth: 300,
-                backgroundColor: "white",
-                color: "black",
-              }}
+              style={{ minWidth: 300, backgroundColor: "white" }}
             />
             {errors.password && (
               <HelperText type="error">{errors.password.message}</HelperText>
@@ -103,10 +93,7 @@ export default function LoginForm() {
 
       <Button
         mode="contained"
-        style={{
-          borderRadius: 8,
-          backgroundColor: "#000",
-        }}
+        style={{ borderRadius: 8, backgroundColor: "#000" }}
         onPress={handleSubmit(onSubmit)}
       >
         Login

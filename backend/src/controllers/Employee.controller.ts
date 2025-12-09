@@ -134,45 +134,45 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
-        // 1. Remove 'timestamps' from here. Mongoose handles it automatically.
-        const {
-            name, email, phone, profileImgUri,
-            department, jobTitle, role, isActive, password
-        } = req.body;
+        // 1. Define exactly what can be updated to prevent "Over-posting" attacks
+        // (e.g., preventing a user from changing their own 'isAdmin' flag if you didn't check it)
+        const allowedUpdates = [
+            'name', 'email', 'phone', 'profileImgUri', 
+            'department', 'jobTitle', 'role', 'isActive'
+        ];
 
-        // 2. Optimization: Check if body is empty to save DB call
-        if (Object.keys(req.body).length === 0) {
+        // 2. Filter req.body to only include allowed fields
+        const updates: Record<string, any> = {};
+        
+        Object.keys(req.body).forEach((key) => {
+            if (allowedUpdates.includes(key)) {
+                updates[key] = req.body[key];
+            }
+        });
+
+        // 3. Check if there is anything to update (including password)
+        if (Object.keys(updates).length === 0 && !req.body.password) {
             return res.status(400).json({
                 success: false,
-                message: "No fields provided for update"
+                message: "No valid fields provided for update"
             });
         }
 
-        const updatedData: any = {};
-
-        if (name) updatedData.name = name;
-        if (email) updatedData.email = email;
-        if (phone) updatedData.phone = phone;
-        if (profileImgUri) updatedData.profileImgUri = profileImgUri;
-        if (department) updatedData.department = department;
-        if (jobTitle) updatedData.jobTitle = jobTitle;
-        if (role) updatedData.role = role;
-
-        // Keep this! Logic is perfect for booleans.
-        if (isActive !== undefined) updatedData.isActive = isActive;
-
-        if (password) {
+        // 4. Handle Password Hashing separately (Async operation)
+        if (req.body.password) {
             const salt = await bcrypt.genSalt(10);
-            updatedData.password = await bcrypt.hash(password, salt);
-            updatedData.requiresPasswordChange = false;
+            updates.password = await bcrypt.hash(req.body.password, salt);
+            updates.requiresPasswordChange = false;
         }
 
-        // 3. Perform Update
+        // 5. Perform Update
+        // { new: true } returns the modified document rather than the original
+        // { runValidators: true } ensures enums (like Role) and required fields are respected
         const updatedEmployee = await Employee.findByIdAndUpdate(
             id,
-            updatedData,
-            { new: true, runValidators: true } // runValidators ensures Role is valid (ADMIN, HOST...)
-        ).select('-password');
+            updates,
+            { new: true, runValidators: true }
+        ).select('-password'); // Exclude password from response
 
         if (!updatedEmployee) {
             return res.status(404).json({
@@ -188,7 +188,7 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
         });
 
     } catch (error: any) {
-        // 4. Handle Duplicate Email Error specificallly
+        // 6. Handle Duplicate Email Error (Mongoose Error Code 11000)
         if (error.code === 11000) {
             return res.status(409).json({
                 success: false,
@@ -196,21 +196,31 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
             });
         }
 
-        // 5. Handle Invalid ID format (CastError)
+        // 7. Handle Invalid MongoDB Object ID
         if (error.name === 'CastError') {
             return res.status(400).json({
                 success: false,
-                message: "Invalid Employee ID"
+                message: "Invalid Employee ID format"
             });
         }
 
+        // 8. Handle Validation Errors (e.g., Invalid Enum value for Role)
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map((val: any) => val.message);
+            return res.status(400).json({
+                success: false,
+                message: "Validation Error",
+                errors: messages
+            });
+        }
+
+        console.error("Update Error:", error);
         res.status(500).json({
             success: false,
-            message: "An error occurred while updating the employee.",
-            error: error.message
+            message: "Internal Server Error"
         });
     }
-}
+};
 
 export const GetActiveHostList = async (req: Request, res: Response) => {
     const hosts = await Employee.find({ role: "HOST", isActive: true }).select('name profileImgUri _id jobTitle').sort('name');
