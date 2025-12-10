@@ -2,7 +2,6 @@ import { Filter, Plus, Search } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Text,
   TextInput,
@@ -11,53 +10,24 @@ import {
 } from "react-native";
 
 import { useVisitors } from "@/hooks/Dashboard/visitors/useVisitors";
-import { useAppDispatch } from "@/store/hooks";
-import {
-  createGuestThunk,
-  deleteGuestThunk,
-  fetchGuestsThunk,
-  updateGuestThunk,
-} from "@/store/slices/guest.slice";
+import { useVisitorActions } from "@/hooks/Dashboard/visitors/useVisitorActions";
 import { Visitor } from "@/store/types/visitor";
 import { VisitorCard } from "./VisitorCard";
 import VisitorForm from "./VisitorForm";
 
 export default function VisitorsList() {
-  const dispatch = useAppDispatch();
   const { searchQuery, setSearchQuery, visitors, loading } = useVisitors();
-
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
+
+  const { handleCreate, handleUpdate, handleDelete } = useVisitorActions(() => {
+    setIsFormVisible(false);
+    setSelectedVisitor(null);
+  });
 
   const openCreateForm = () => {
     setSelectedVisitor(null);
     setIsFormVisible(true);
-  };
-
-  const deleteVisitor = async (visitor: Visitor) => {
-    Alert.alert(
-      "Delete Visitor",
-      `Are you sure you want to delete ${visitor.name}?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await dispatch(deleteGuestThunk(visitor._id));
-              dispatch(fetchGuestsThunk());
-            } catch (err) {
-              console.error("Delete error:", err);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
   };
 
   const openEditForm = (visitor: Visitor) => {
@@ -66,19 +36,10 @@ export default function VisitorsList() {
   };
 
   const handleFormSubmit = async (formData: Partial<Visitor>) => {
-    try {
-      if (selectedVisitor) {
-        await dispatch(
-          updateGuestThunk({ ...selectedVisitor, ...formData } as Visitor)
-        );
-      } else {
-        await dispatch(createGuestThunk(formData));
-      }
-
-      setIsFormVisible(false);
-      dispatch(fetchGuestsThunk());
-    } catch (err) {
-      console.error("Submit error:", err);
+    if (selectedVisitor) {
+      await handleUpdate(selectedVisitor._id, formData);
+    } else {
+      await handleCreate(formData);
     }
   };
 
@@ -133,7 +94,7 @@ export default function VisitorsList() {
             <VisitorCard
               item={item}
               onEdit={openEditForm}
-              onDelete={deleteVisitor}
+              onDelete={handleDelete}
             />
           )}
           contentContainerStyle={{ padding: 24 }}

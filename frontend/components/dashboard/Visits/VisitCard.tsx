@@ -4,6 +4,7 @@ import { Visit } from "@/store/types/visit";
 import { Calendar, Clock, User, Briefcase, Trash2, Edit } from "lucide-react-native";
 // eslint-disable-next-line import/no-unresolved
 import { format } from "date-fns";
+import { getStatusColor, getStatusLabel } from "@/utils/visit.utils";
 
 interface VisitCardProps {
     visit: Visit;
@@ -12,16 +13,14 @@ interface VisitCardProps {
 }
 
 export const VisitCard: React.FC<VisitCardProps> = ({ visit, onEdit, onDelete }) => {
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'scheduled': return 'bg-blue-100 text-blue-800';
-            case 'checked-in': return 'bg-green-100 text-green-800';
-            case 'checked-out': return 'bg-gray-100 text-gray-800';
-            case 'cancelled': return 'bg-red-100 text-red-800';
-            case 'no-show': return 'bg-yellow-100 text-yellow-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
+    const statusColorClass = getStatusColor(visit.status);
+    // Extract bg and text classes for separate application if needed, 
+    // but here we can just apply them to the container and text respectively if we split them.
+    // The util returns a string like "bg-yellow-100 text-yellow-800 border-yellow-200"
+    // We need to parse this or adjust the util. 
+    // Let's adjust the usage to split the string since NativeWind might need specific class application.
+    
+    const [bgClass, textClass] = statusColorClass.split(' ');
 
     return (
         <View className="bg-white p-4 rounded-xl border border-gray-100 mb-3 shadow-sm">
@@ -35,9 +34,9 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, onEdit, onDelete })
                         <Text className="text-gray-500 text-xs">{visit.visitor.company || 'No Company'}</Text>
                     </View>
                 </View>
-                <View className={`px-2 py-1 rounded-full ${getStatusColor(visit.status).split(' ')[0]}`}>
-                    <Text className={`text-xs font-medium ${getStatusColor(visit.status).split(' ')[1]}`}>
-                        {visit.status.charAt(0).toUpperCase() + visit.status.slice(1)}
+                <View className={`px-2 py-1 rounded-full ${bgClass}`}>
+                    <Text className={`text-xs font-medium ${textClass}`}>
+                        {getStatusLabel(visit.status)}
                     </Text>
                 </View>
             </View>
@@ -55,6 +54,15 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, onEdit, onDelete })
                         {format(new Date(visit.scheduledCheckIn), "hh:mm a")}
                     </Text>
                 </View>
+                
+                {visit.purpose && (
+                    <View className="flex-row items-center w-full mt-1 px-1">
+                        <Text className="text-gray-600 text-xs italic">
+                            Topic: {visit.purpose}
+                        </Text>
+                    </View>
+                )}
+
                 <View className="flex-row items-center w-full mt-1">
                     <Briefcase size={14} className="text-gray-400 mr-1.5" color="#9CA3AF" />
                     <Text className="text-gray-600 text-xs">

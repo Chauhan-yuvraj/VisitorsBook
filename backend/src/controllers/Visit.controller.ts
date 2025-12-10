@@ -41,6 +41,7 @@ export const GetVisit = async (req: Request, res: Response) => {
                 message: "Visit not found"
             });
         }
+        
         res.status(200).json({
             success: true,
             data: visit
@@ -62,9 +63,7 @@ export const ScheduleVisit = async (req: Request, res: Response) => {
             hostId, 
             scheduledCheckIn, 
             isWalkIn,
-            notes // Assuming we might want to pass notes, though not explicitly in schema top level, maybe in meetingMinutes or we add it? 
-                  // The schema has 'meetingMinutes' for post-visit. 
-                  // Let's stick to what's in the schema.
+            purpose
         } = req.body;
 
         if (!visitorId || !hostId || !scheduledCheckIn) {
@@ -101,6 +100,7 @@ export const ScheduleVisit = async (req: Request, res: Response) => {
             },
             status: "PENDING",
             isWalkIn: isWalkIn || false,
+            purpose: purpose || "",
             scheduledCheckIn: new Date(scheduledCheckIn),
             // Initialize other fields if needed
         });

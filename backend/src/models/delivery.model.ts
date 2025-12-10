@@ -24,7 +24,7 @@ const deliverySchema = new Schema(
     // --- LIFECYCLE ---
     status: {
       type: String,
-      enum: ["PENDING", "COLLECTED", "RETURNED"],
+      enum: ["PENDING", "COLLECTED", "RETURNED", "REJECTED"],
       default: "PENDING",
       index: true
     },

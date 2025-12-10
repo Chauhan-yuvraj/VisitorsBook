@@ -2,7 +2,7 @@ import React from "react";
 import { View, StatusBar } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import Sidebar from "./Sidebar";
+import Sidebar from "../../components/dashboard/sidebar/Sidebar";
 import Background from "@/components/Background";
 import DashboardContent from "@/components/dashboard/DashboardContent";
 import { useDashboardTabs } from "@/hooks/Dashboard/useDashboardTabs";

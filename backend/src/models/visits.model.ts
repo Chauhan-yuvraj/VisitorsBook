@@ -31,6 +31,7 @@ const visitSchema = new Schema(
     },
     
     isWalkIn: { type: Boolean, default: false },
+    purpose: { type: String, trim: true }, // Topic/Reason for the visit
 
     // --- 4. TIMESTAMPS ---
     scheduledCheckIn: { type: Date },

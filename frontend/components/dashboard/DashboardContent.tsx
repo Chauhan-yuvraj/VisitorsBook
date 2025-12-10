@@ -1,7 +1,8 @@
-import { TabName } from "@/app/(admin)/Sidebar";
+import { TabName } from "@/components/dashboard/sidebar/Sidebar";
 import EmployeesList from "@/components/dashboard/Employees/EmployeesList";
 import VisitorsList from "@/components/dashboard/Visitors/VisitorsList";
 import VisitsList from "@/components/dashboard/Visits/VisitsList";
+import DeliveriesList from "@/components/dashboard/Deliveries/DeliveriesList";
 import MainDashBoard from "@/components/dashboard/MainDashBoard";
 import { Text, View } from "react-native";
 
@@ -26,6 +27,9 @@ export default function DashboardContent({
 
     case "Visits":
       return <VisitsList />;
+
+    case "Deliveries":
+      return <DeliveriesList />;
 
     case "Analytics":
       return <View><Text>Analytics Component</Text></View>;

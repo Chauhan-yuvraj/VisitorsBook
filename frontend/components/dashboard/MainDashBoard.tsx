@@ -1,14 +1,48 @@
-import { View, Text, ScrollView } from "react-native";
-import React from "react";
+import { View, Text, ScrollView, TouchableOpacity, Modal } from "react-native";
+import React, { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bell, Plus, Search } from "lucide-react-native";
+import { Bell, Plus, Search, Package } from "lucide-react-native";
 import { Avatar } from "react-native-paper";
 import StatCard from "@/app/(admin)/StatsCard";
 import VisitorRow from "@/app/(admin)/VisitorRow";
 import UpcomingTimeline from "@/app/(admin)/UpcomingTimeline";
+import VisitForm from "./Visits/VisitForm";
+import DeliveryForm from "./Deliveries/DeliveryForm";
+import { useVisitActions } from "@/hooks/Dashboard/visits/useVisitActions";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchVisitsThunk } from "@/store/slices/visit.slice";
+import { fetchDeliveriesThunk } from "@/store/slices/delivery.slice";
+import { format, isToday } from "date-fns";
 
 export default function MainDashBoard() {
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
+  const [isCheckInVisible, setIsCheckInVisible] = useState(false);
+  const [isDeliveryVisible, setIsDeliveryVisible] = useState(false);
+  const { handleCreate } = useVisitActions(() => setIsCheckInVisible(false));
+
+  const { visits } = useAppSelector(state => state.visits);
+  const { deliveries } = useAppSelector(state => state.delivery);
+
+  useEffect(() => {
+    dispatch(fetchVisitsThunk({}));
+    dispatch(fetchDeliveriesThunk());
+  }, [dispatch]);
+
+  // Calculate Stats
+  const checkedInCount = visits.filter(v => v.status === 'CHECKED_IN').length;
+  // Expected: Status is PENDING and Scheduled Date is Today
+  const expectedCount = visits.filter(v => 
+    v.status === 'PENDING' && 
+    v.scheduledCheckIn && 
+    isToday(new Date(v.scheduledCheckIn))
+  ).length;
+  const pendingPackagesCount = deliveries.filter(d => d.status === 'PENDING').length;
+
+  // Recent Activity (Last 5 visits)
+  const recentVisits = [...visits]
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    .slice(0, 5);
 
   return (
     <View className="flex-1">
@@ -21,7 +55,7 @@ export default function MainDashBoard() {
               Good Morning, Admin
             </Text>
             <Text className="text-xs text-gray-400 font-medium">
-              Tuesday, Oct 24
+              {format(new Date(), "EEEE, MMM dd")}
             </Text>
           </View>
 
@@ -50,20 +84,42 @@ export default function MainDashBoard() {
         <View className="flex-row flex-wrap -mx-1 mb-6 mt-6">
           <StatCard
             label="Checked In"
-            value="24"
+            value={checkedInCount.toString()}
             subLabel="visitors"
-            trend="+12%"
           />
-          <StatCard label="Expected" value="42" subLabel="scheduled" />
-          <StatCard label="Packages" value="8" subLabel="pending" isAlert />
+          <StatCard 
+            label="Expected" 
+            value={expectedCount.toString()} 
+            subLabel="scheduled" 
+          />
+          <StatCard 
+            label="Packages" 
+            value={pendingPackagesCount.toString()} 
+            subLabel="pending" 
+            isAlert={pendingPackagesCount > 0} 
+          />
 
           {/* Add Button Tile */}
-          <View className="bg-primary p-5 rounded-3xl mb-4 shadow-lg flex-1 min-w-[150px] mx-1 items-center justify-center">
+          <TouchableOpacity 
+            onPress={() => setIsCheckInVisible(true)}
+            className="bg-primary p-5 rounded-3xl mb-4 shadow-lg flex-1 min-w-[150px] mx-1 items-center justify-center"
+          >
             <View className="bg-white/20 p-2 rounded-full mb-2">
               <Plus color="white" size={20} />
             </View>
             <Text className="text-white font-medium">New Check-In</Text>
-          </View>
+          </TouchableOpacity>
+
+          {/* Delivery Button Tile */}
+          <TouchableOpacity 
+            onPress={() => setIsDeliveryVisible(true)}
+            className="bg-orange-500 p-5 rounded-3xl mb-4 shadow-lg flex-1 min-w-[150px] mx-1 items-center justify-center"
+          >
+            <View className="bg-white/20 p-2 rounded-full mb-2">
+              <Package color="white" size={20} />
+            </View>
+            <Text className="text-white font-medium">Log Delivery</Text>
+          </TouchableOpacity>
         </View>
 
         {/* 2. Main Content Split */}
@@ -78,35 +134,27 @@ export default function MainDashBoard() {
             </View>
 
             <View>
-              <VisitorRow
-                name="Sarah Connor"
-                company="Cyberdyne"
-                host="Miles Dyson"
-                time="09:15 AM"
-                status="Active"
-                image="https://ui-avatars.com/api/?name=Sarah+Connor&background=random"
-              />
-              <VisitorRow
-                name="John Wick"
-                company="Continental"
-                host="Winston"
-                time="10:00 AM"
-                status="Active"
-                image="https://ui-avatars.com/api/?name=John+Wick&background=000&color=fff"
-              />
-              <VisitorRow
-                name="Ellen Ripley"
-                company="Weyland Yutani"
-                host="Burke"
-                time="08:30 AM"
-                status="Departed"
-              />
+              {recentVisits.length > 0 ? (
+                recentVisits.map((visit) => (
+                  <VisitorRow
+                    key={visit._id}
+                    name={visit.visitor?.name || "Unknown"}
+                    company={visit.visitor?.company || "N/A"}
+                    host={visit.host?.name || "N/A"}
+                    time={visit.actualCheckIn ? format(new Date(visit.actualCheckIn), "hh:mm a") : "--:--"}
+                    status={visit.status === 'CHECKED_IN' ? "Active" : visit.status === 'CHECKED_OUT' ? "Departed" : "Pending"}
+                    image={visit.visitor?.profileImgUri}
+                  />
+                ))
+              ) : (
+                <Text className="text-gray-400 text-center py-4">No recent activity</Text>
+              )}
             </View>
           </View>
 
           {/* Right: Timeline & Widget */}
           <View className="flex-1 gap-6">
-            <UpcomingTimeline />
+            <UpcomingTimeline visits={visits} />
 
             {/* Gradient Analytics Widget */}
             <View className="bg-indigo-600 rounded-3xl p-6 shadow-lg overflow-hidden relative">
@@ -126,6 +174,22 @@ export default function MainDashBoard() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal visible={isCheckInVisible} animationType="slide" transparent>
+        <VisitForm
+            onCancel={() => setIsCheckInVisible(false)}
+            onSubmit={async (data) => {
+                await handleCreate(data);
+                setIsCheckInVisible(false);
+            }}
+            initialData={{ isWalkIn: true } as any}
+        />
+      </Modal>
+
+      <DeliveryForm 
+        visible={isDeliveryVisible}
+        onClose={() => setIsDeliveryVisible(false)}
+      />
     </View>
   );
 }

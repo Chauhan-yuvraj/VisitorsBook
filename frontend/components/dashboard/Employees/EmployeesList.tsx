@@ -2,7 +2,6 @@ import { Filter, Plus, Search } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Text,
@@ -12,19 +11,12 @@ import {
 } from "react-native";
 
 import { useEmployees } from "@/hooks/Dashboard/employees/useEmployees";
-import { useAppDispatch } from "@/store/hooks";
-import {
-  addEmployeeThunk,
-  deleteEmployeeThunk,
-  fetchEmployeesThunk,
-  updateEmployeeThunk,
-} from "@/store/slices/employees.slice";
+import { useEmployeeActions } from "@/hooks/Dashboard/employees/useEmployeeActions";
 import { Employee } from "@/store/types/user";
 import { EmployeeCard } from "./EmployeeCard";
 import EmployeeForm from "./EmployeeForm";
 
 export default function EmployeesList() {
-  const dispatch = useAppDispatch();
   const { searchQuery, setSearchQuery, employees, loading } = useEmployees();
 
   // Local state to manage modal visibility and selected employee
@@ -33,42 +25,15 @@ export default function EmployeesList() {
     null
   );
 
+  const { handleCreate, handleUpdate, handleDelete } = useEmployeeActions(() => {
+    setIsFormVisible(false);
+    setSelectedEmployee(null);
+  });
+
   /** Open form for creating a new employee */
   const openCreateForm = () => {
     setSelectedEmployee(null);
     setIsFormVisible(true);
-  };
-
-  /** Delete employee and mark as inactive */
-  const deleteEmployee = async (employee: Employee) => {
-    // Show confirmation dialog
-    Alert.alert(
-      "Delete Employee",
-      `Are you sure you want to delete ${employee.name}?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              // Mark employee as inactive
-              await dispatch(deleteEmployeeThunk(employee._id));
-              await dispatch(
-                updateEmployeeThunk({ ...employee, isActive: false })
-              );
-              dispatch(fetchEmployeesThunk()); // Refresh list
-            } catch (err) {
-              console.error("Delete error:", err);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
   };
 
   /** Open form for editing an existing employee */
@@ -79,23 +44,10 @@ export default function EmployeesList() {
 
   /** Handle form submission for add/update */
   const handleFormSubmit = async (formData: Partial<Employee>) => {
-    try {
-      if (selectedEmployee) {
-        // Update existing employee
-        dispatch(
-          updateEmployeeThunk({ ...selectedEmployee, ...formData } as Employee)
-        );
-        console.log("Updating:", selectedEmployee._id, formData);
-      } else {
-        // Create new employee
-        console.log("Creating:", formData);
-        await dispatch(addEmployeeThunk(formData));
-      }
-
-      setIsFormVisible(false);
-      dispatch(fetchEmployeesThunk()); // Refresh list
-    } catch (err) {
-      console.error("Submit error:", err);
+    if (selectedEmployee) {
+      await handleUpdate(selectedEmployee._id, formData);
+    } else {
+      await handleCreate(formData);
     }
   };
 
@@ -149,7 +101,7 @@ export default function EmployeesList() {
             <EmployeeCard
               item={item}
               onEdit={openEditForm}
-              onDelete={deleteEmployee}
+              onDelete={handleDelete}
             />
           )}
           showsVerticalScrollIndicator={false}
@@ -174,7 +126,7 @@ export default function EmployeesList() {
           initialData={selectedEmployee}
           onClose={() => setIsFormVisible(false)}
           onSubmit={handleFormSubmit}
-          isSubmitting={loading}
+          isSubmitting={loading === 'pending'}
         />
       </Modal>
     </View>

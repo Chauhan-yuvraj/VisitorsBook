@@ -7,6 +7,7 @@ import {
   PieChart,
   LogOut,
   UserRoundPen,
+  Package,
 } from "lucide-react-native";
 
 // Define the available tabs to avoid typos
@@ -16,7 +17,8 @@ export type TabName =
   | "Visitors"
   | "Visits"
   | "userForm"
-  | "Analytics";
+  | "Analytics"
+  | "Deliveries";
 
 interface SidebarItemProps {
   icon: React.ComponentType<{ size: number; color: string }>;
@@ -64,7 +66,7 @@ const Sidebar = ({ currentTab, onNavigate }: SidebarProps) => {
         <View className="flex-row items-center px-8 mb-8">
           <View className=" bg-primary rounded-lg p-1 items-center justify-center mr-3">
             <Image
-              source={require("../../assets/images/icon.png")}
+              source={require("@/assets/images/icon.png")}
               className="h-8 w-8"
             />
           </View>
@@ -98,6 +100,12 @@ const Sidebar = ({ currentTab, onNavigate }: SidebarProps) => {
             label="Visits"
             active={currentTab === "Visits"}
             onPress={() => onNavigate("Visits")}
+          />
+          <SidebarItem
+            icon={Package}
+            label="Deliveries"
+            active={currentTab === "Deliveries"}
+            onPress={() => onNavigate("Deliveries")}
           />
           <SidebarItem
             icon={PieChart}

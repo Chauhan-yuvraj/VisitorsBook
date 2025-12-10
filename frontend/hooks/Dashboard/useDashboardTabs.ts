@@ -1,4 +1,4 @@
-import { TabName } from "@/app/(admin)/Sidebar";
+import { TabName } from "@/components/dashboard/sidebar/Sidebar";
 import { useState, useCallback } from "react";
 
 export function useDashboardTabs(defaultTab: TabName = "Dashboard") {

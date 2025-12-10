@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
+import { Visit } from '@/store/types/visit';
+import { format } from 'date-fns';
 
 interface UpcomingItemProps {
   name: string;
@@ -23,16 +25,36 @@ const UpcomingItem = ({ name, detail, time, color = 'bg-black' }: UpcomingItemPr
   </View>
 );
 
-const UpcomingTimeline = () => {
+interface UpcomingTimelineProps {
+  visits?: Visit[];
+}
+
+const UpcomingTimeline = ({ visits = [] }: UpcomingTimelineProps) => {
+  // Filter for upcoming visits (e.g., status is SCHEDULED or PENDING)
+  // For now, let's just take the first 3 scheduled visits
+  const upcomingVisits = visits
+    .filter(v => v.status === 'SCHEDULED' || v.status === 'PENDING')
+    .slice(0, 3);
+
   return (
     <View className="bg-surface rounded-3xl p-6 shadow-sm border border-gray-100">
        <View className="flex-row justify-between items-center mb-6">
           <Text className="font-bold text-gray-800">Upcoming</Text>
        </View>
        <View>
-          <UpcomingItem name="Peter Parker" detail="Daily Bugle • Interview" time="11:30" />
-          <UpcomingItem name="Diana Prince" detail="Embassy • Lunch" time="01:00" color="bg-gray-300" />
-          <UpcomingItem name="Clark Kent" detail="Daily Planet • Drop-off" time="02:15" color="bg-gray-200" />
+          {upcomingVisits.length > 0 ? (
+            upcomingVisits.map((visit, index) => (
+              <UpcomingItem 
+                key={visit._id}
+                name={visit.visitor?.name || "Unknown"} 
+                detail={`${visit.purpose || 'Visit'} • ${visit.host?.name || 'Host'}`} 
+                time={visit.scheduledCheckIn ? format(new Date(visit.scheduledCheckIn), 'HH:mm') : '--:--'}
+                color={index === 0 ? 'bg-black' : 'bg-gray-300'}
+              />
+            ))
+          ) : (
+            <Text className="text-gray-400 text-sm">No upcoming visits scheduled.</Text>
+          )}
        </View>
     </View>
   );

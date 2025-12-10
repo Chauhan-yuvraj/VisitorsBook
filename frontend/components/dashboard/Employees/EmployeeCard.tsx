@@ -2,6 +2,11 @@ import React from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { Mail, MoreVertical, Trash2 } from "lucide-react-native";
 import { Employee } from "@/store/types/user";
+import {
+  getInitials,
+  getStatusColor,
+  getStatusLabel,
+} from "@/utils/employees/employee.utils";
 
 interface EmployeeCardProps {
   item: Employee;
@@ -10,21 +15,9 @@ interface EmployeeCardProps {
 }
 
 export const EmployeeCard = ({ item, onEdit, onDelete }: EmployeeCardProps) => {
-  // Helper for Initials
-  const getInitials = (name: string) =>
-    name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .substring(0, 2)
-      .toUpperCase();
-
-  // Helper for Status
   const isActive = item.isActive;
-  const statusColor = isActive
-    ? "bg-green-100 text-green-700"
-    : "bg-red-100 text-red-700";
-  const statusLabel = isActive ? "Active" : "Inactive";
+  const statusColor = getStatusColor(isActive);
+  const statusLabel = getStatusLabel(isActive);
 
   return (
     <View className="bg-white p-4 rounded-xl mb-3 border border-gray-100 shadow-sm flex-row items-center justify-between">

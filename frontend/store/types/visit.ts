@@ -15,8 +15,9 @@ export interface Visit {
     scheduledCheckIn: string;
     actualCheckIn?: string;
     actualCheckOut?: string;
-    status: 'scheduled' | 'checked-in' | 'checked-out' | 'cancelled' | 'no-show';
+    status: 'PENDING' | 'CHECKED_IN' | 'CHECKED_OUT' | 'DECLINED' | 'MISSED';
     isWalkIn: boolean;
+    purpose?: string;
     meetingMinutes?: string;
     createdAt: string;
     updatedAt: string;
@@ -27,14 +28,15 @@ export interface CreateVisitPayload {
     hostId: string;
     scheduledCheckIn: string;
     isWalkIn?: boolean;
-    notes?: string;
+    purpose?: string;
 }
 
 export interface UpdateVisitPayload {
     scheduledCheckIn?: string;
-    status?: 'scheduled' | 'checked-in' | 'checked-out' | 'cancelled' | 'no-show';
+    status?: 'PENDING' | 'CHECKED_IN' | 'CHECKED_OUT' | 'DECLINED' | 'MISSED';
     meetingMinutes?: string;
     actualCheckIn?: string;
     actualCheckOut?: string;
     isWalkIn?: boolean;
+    purpose?: string;
 }

@@ -5,6 +5,7 @@ import recordsRoutes from "./routes/records.routes";
 import employeeRoutes from "./routes/Employee.routes"
 import authRoutes from "./routes/Auth.routes"
 import visitRoutes from "./routes/visits.routes"
+import deliveryRoutes from "./routes/Delivery.routes"
 import cookieParser from "cookie-parser";
 
 
@@ -24,6 +25,7 @@ app.use("/api/visitors", visitorRoutes);
 app.use("/api/visits", visitRoutes);
 app.use("/api/records", recordsRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/deliveries', deliveryRoutes);
 
 
 export default app;
