@@ -10,7 +10,9 @@ export default function DeliveriesList() {
     const dispatch = useAppDispatch();
     const { deliveries, loading } = useAppSelector(state => state.delivery);
     const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [isFormVisible, setIsFormVisible] = useState(false);
+    const [isFilterVisible, setIsFilterVisible] = useState(false);
 
     useEffect(() => {
         dispatch(fetchDeliveriesThunk());
@@ -26,12 +28,17 @@ export default function DeliveriesList() {
         const tracking = d.trackingNumber || "";
         const carrier = d.carrier || "";
 
-        return (
+        const matchesSearch = 
             recipientName.toLowerCase().includes(query) ||
             tracking.toLowerCase().includes(query) ||
-            carrier.toLowerCase().includes(query)
-        );
+            carrier.toLowerCase().includes(query);
+
+        const matchesStatus = statusFilter ? d.status === statusFilter : true;
+
+        return matchesSearch && matchesStatus;
     });
+
+    const STATUS_FILTERS = ["PENDING", "COLLECTED", "RETURNED", "REJECTED"];
 
     return (
         <View className="flex-1 bg-gray-50 pt-12 px-6">
@@ -53,21 +60,49 @@ export default function DeliveriesList() {
                 </TouchableOpacity>
             </View>
 
-            {/* Search Bar */}
-            <View className="flex-row mb-6 gap-3">
-                <View className="flex-1 flex-row items-center bg-white border border-gray-200 rounded-lg px-3 h-12">
-                    <Search size={20} color="#9CA3AF" />
-                    <TextInput
-                        placeholder="Search recipient, carrier, tracking..."
-                        className="flex-1 ml-2 text-gray-700 h-full"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
+            {/* Search Bar & Filter */}
+            <View className="flex-col mb-6">
+                <View className="flex-row gap-3">
+                    <View className="flex-1 flex-row items-center bg-white border border-gray-200 rounded-lg px-3 h-12">
+                        <Search size={20} color="#9CA3AF" />
+                        <TextInput
+                            placeholder="Search recipient, carrier, tracking..."
+                            className="flex-1 ml-2 text-gray-700 h-full"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                    </View>
+                    
+                    <TouchableOpacity 
+                        onPress={() => setIsFilterVisible(!isFilterVisible)}
+                        className={`w-12 h-12 border rounded-lg items-center justify-center ${isFilterVisible || statusFilter ? 'bg-orange-500 border-orange-500' : 'bg-white border-gray-200'}`}
+                    >
+                        <Filter size={20} color={isFilterVisible || statusFilter ? "white" : "#6B7280"} />
+                    </TouchableOpacity>
                 </View>
-                
-                <TouchableOpacity className="w-12 h-12 bg-white border border-gray-200 rounded-lg items-center justify-center">
-                    <Filter size={20} color="#6B7280" />
-                </TouchableOpacity>
+
+                {/* Filter Options */}
+                {isFilterVisible && (
+                    <View className="flex-row flex-wrap gap-2 mt-3">
+                        <TouchableOpacity
+                            onPress={() => setStatusFilter(null)}
+                            className={`px-3 py-1.5 rounded-full border ${!statusFilter ? 'bg-gray-800 border-gray-800' : 'bg-white border-gray-200'}`}
+                        >
+                            <Text className={`text-xs font-medium ${!statusFilter ? 'text-white' : 'text-gray-600'}`}>All</Text>
+                        </TouchableOpacity>
+                        {STATUS_FILTERS.map(status => (
+                            <TouchableOpacity
+                                key={status}
+                                onPress={() => setStatusFilter(status === statusFilter ? null : status)}
+                                className={`px-3 py-1.5 rounded-full border ${status === statusFilter ? 'bg-orange-500 border-orange-500' : 'bg-white border-gray-200'}`}
+                            >
+                                <Text className={`text-xs font-medium ${status === statusFilter ? 'text-white' : 'text-gray-600'}`}>
+                                    {status}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
             </View>
 
             {/* List */}

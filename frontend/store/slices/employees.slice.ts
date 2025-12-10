@@ -33,7 +33,7 @@ export const fetchEmployeesThunk = createAsyncThunk(
 
 export const addEmployeeThunk = createAsyncThunk(
     'employees/addEmployee',
-    async (newEmployee: Partial<Employee>, { rejectWithValue }) => {
+    async (newEmployee: Partial<Employee> | FormData, { rejectWithValue }) => {
         try {
             // Call service to add employee
             const createdEmployee = await addEmployee(newEmployee);
@@ -46,10 +46,10 @@ export const addEmployeeThunk = createAsyncThunk(
 
 export const updateEmployeeThunk = createAsyncThunk(
     'employees/updateEmployee',
-    async (updatedEmployee: Employee, { rejectWithValue }) => {
+    async ({ id, data }: { id: string, data: Partial<Employee> | FormData }, { rejectWithValue }) => {
         try {
             // Call service to update employee
-            const employee = await updateEmployee(updatedEmployee);
+            const employee = await updateEmployee(data, id);
             return employee;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to update employee');

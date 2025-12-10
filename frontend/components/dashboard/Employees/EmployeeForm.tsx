@@ -9,6 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
+  ActivityIndicator,
 } from "react-native";
 import {
   X,
@@ -18,13 +20,15 @@ import {
   Phone,
   Briefcase,
   Building,
+  Camera,
 } from "lucide-react-native";
 import { Employee, UserRole } from "@/store/types/user";
+import { useImagePicker } from "@/hooks/useImagePicker";
 
 interface EmployeeFormProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (data: Partial<Employee>) => void;
+  onSubmit: (data: Partial<Employee> | FormData) => void;
   initialData?: Employee | null; // If provided, we are in "Edit" mode
   isSubmitting?: boolean;
 }
@@ -45,7 +49,26 @@ export default function EmployeeForm({
     department: "",
     role: "employee" as UserRole | string,
     isActive: true,
+    profileImgUri: "",
   });
+
+  const [imageUri, setImageUri] = useState<string | null>(null);
+
+  const { handleTakePhoto, handleChooseFromGallery } = useImagePicker((uri) => {
+    if (uri) setImageUri(uri);
+  });
+
+  const showImagePickerOptions = () => {
+    Alert.alert(
+      "Profile Photo",
+      "Choose an option",
+      [
+        { text: "Camera", onPress: handleTakePhoto },
+        { text: "Gallery", onPress: handleChooseFromGallery },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
 
   // Load initial data when editing
   useEffect(() => {
@@ -58,24 +81,28 @@ export default function EmployeeForm({
         department: initialData.department || "",
         role: initialData.role || "employee",
         isActive: initialData.isActive ?? true,
+        profileImgUri: initialData.profileImgUri || "",
       });
+      setImageUri(initialData.profileImgUri || null);
     } else {
       // Reset form for "Add New"
       setFormData({
-        name: "suyash Gehlot",
-        email: "suyash.gehlot@abhyuday.in",
-        phone: "9265753207",
-        jobTitle: "Jr. Software Engineer",
-        department: "IT",
+        name: "",
+        email: "",
+        phone: "",
+        jobTitle: "",
+        department: "",
         role: "employee",
         isActive: true,
+        profileImgUri: "",
       });
+      setImageUri(null);
     }
   }, [initialData, visible]);
 
   if (!visible) return null;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Basic Validation
     if (!formData.name || !formData.email || !formData.jobTitle) {
       Alert.alert(
@@ -85,8 +112,33 @@ export default function EmployeeForm({
       return;
     }
 
-    // Pass data back to parent
-    onSubmit(formData);
+    // Check if we need to upload an image (local URI)
+    const hasNewImage = imageUri && !imageUri.startsWith('http');
+
+    if (hasNewImage) {
+      const data = new FormData();
+      data.append('name', formData.name);
+      data.append('email', formData.email);
+      data.append('phone', formData.phone);
+      data.append('jobTitle', formData.jobTitle);
+      data.append('department', formData.department);
+      data.append('role', formData.role);
+      data.append('isActive', String(formData.isActive));
+      
+      // Append the file
+      // @ts-ignore
+      data.append('profileImg', {
+        uri: imageUri,
+        type: 'image/jpeg', // You might want to detect type from URI extension
+        name: 'profile.jpg',
+      });
+
+      onSubmit(data);
+    } else {
+      // No new image, just submit the JSON data
+      // Ensure profileImgUri matches the current imageUri (which might be the old URL or empty)
+      onSubmit({ ...formData, profileImgUri: imageUri || "" });
+    }
   };
 
   // Reusable Input Component
@@ -146,6 +198,32 @@ export default function EmployeeForm({
             className="flex-1 px-6 pt-6"
             showsVerticalScrollIndicator={false}
           >
+            {/* Profile Image Upload */}
+            <View className="items-center mb-8">
+              <TouchableOpacity
+                onPress={showImagePickerOptions}
+                className="relative"
+              >
+                <View className="h-28 w-28 rounded-full bg-gray-100 border-4 border-white shadow-sm items-center justify-center overflow-hidden">
+                  {imageUri ? (
+                    <Image
+                      source={{ uri: imageUri }}
+                      className="h-full w-full"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <User size={40} color="#9CA3AF" />
+                  )}
+                </View>
+                <View className="absolute bottom-0 right-0 bg-blue-600 h-9 w-9 rounded-full items-center justify-center border-2 border-white shadow-sm">
+                  <Camera size={16} color="white" />
+                </View>
+              </TouchableOpacity>
+              <Text className="text-xs text-gray-500 mt-3">
+                Tap to upload profile photo
+              </Text>
+            </View>
+
             {/* Personal Info Section */}
             <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
               Personal Information

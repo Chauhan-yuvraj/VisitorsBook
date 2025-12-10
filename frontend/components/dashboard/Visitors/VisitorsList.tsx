@@ -16,8 +16,9 @@ import { VisitorCard } from "./VisitorCard";
 import VisitorForm from "./VisitorForm";
 
 export default function VisitorsList() {
-  const { searchQuery, setSearchQuery, visitors, loading } = useVisitors();
+  const { searchQuery, setSearchQuery, visitors, loading, filterType, setFilterType } = useVisitors();
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
 
   const { handleCreate, handleUpdate, handleDelete } = useVisitorActions(() => {
@@ -64,20 +65,43 @@ export default function VisitorsList() {
         </View>
 
         {/* Search & Filter */}
-        <View className="flex-row items-center space-x-3">
-          <View className="flex-1 flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5">
-            <Search size={20} color="#9CA3AF" className="mr-2" />
-            <TextInput
-              className="flex-1 text-gray-900 text-base"
-              placeholder="Search visitors..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor="#9CA3AF"
-            />
+        <View className="flex-col">
+          <View className="flex-row items-center space-x-3">
+            <View className="flex-1 flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5">
+              <Search size={20} color="#9CA3AF" className="mr-2" />
+              <TextInput
+                className="flex-1 text-gray-900 text-base"
+                placeholder="Search visitors..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+            <TouchableOpacity 
+              onPress={() => setIsFilterVisible(!isFilterVisible)}
+              className={`p-2.5 border rounded-xl ${isFilterVisible || filterType !== 'ALL' ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+            >
+              <Filter size={20} color={isFilterVisible || filterType !== 'ALL' ? "white" : "#374151"} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity className="p-2.5 border border-gray-200 rounded-xl bg-white">
-            <Filter size={20} color="#374151" />
-          </TouchableOpacity>
+
+          {/* Filter Options */}
+          {isFilterVisible && (
+            <View className="flex-row flex-wrap gap-2 mt-3">
+              <TouchableOpacity
+                onPress={() => setFilterType('ALL')}
+                className={`px-3 py-1.5 rounded-full border ${filterType === 'ALL' ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+              >
+                <Text className={`text-xs font-medium ${filterType === 'ALL' ? 'text-white' : 'text-gray-600'}`}>All</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setFilterType('WITH_COMPANY')}
+                className={`px-3 py-1.5 rounded-full border ${filterType === 'WITH_COMPANY' ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+              >
+                <Text className={`text-xs font-medium ${filterType === 'WITH_COMPANY' ? 'text-white' : 'text-gray-600'}`}>With Company</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
 

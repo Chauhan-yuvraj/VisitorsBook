@@ -5,6 +5,7 @@ import { Employee } from "@/store/types/user";
 
 export function useEmployees() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterRole, setFilterRole] = useState<string | null>(null);
   const dispatch = useAppDispatch();
 
   const { employees, loading } = useAppSelector((s) => s.employees);
@@ -22,13 +23,18 @@ export function useEmployees() {
       const email = item.email?.toLowerCase() || "";
       const job = item.jobTitle?.toLowerCase() || "";
 
-      return name.includes(query) || email.includes(query) || job.includes(query);
+      const matchesSearch = name.includes(query) || email.includes(query) || job.includes(query);
+      const matchesRole = filterRole ? item.role === filterRole : true;
+
+      return matchesSearch && matchesRole;
     });
-  }, [employees, searchQuery]);
+  }, [employees, searchQuery, filterRole]);
 
   return {
     searchQuery,
     setSearchQuery,
+    filterRole,
+    setFilterRole,
     employees: filteredData,
     loading,
   };

@@ -33,7 +33,7 @@ const UpcomingTimeline = ({ visits = [] }: UpcomingTimelineProps) => {
   // Filter for upcoming visits (e.g., status is SCHEDULED or PENDING)
   // For now, let's just take the first 3 scheduled visits
   const upcomingVisits = visits
-    .filter(v => v.status === 'SCHEDULED' || v.status === 'PENDING')
+    .filter(v => v.status === 'PENDING')
     .slice(0, 3);
 
   return (

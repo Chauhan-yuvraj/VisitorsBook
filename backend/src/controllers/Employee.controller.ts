@@ -1,6 +1,7 @@
 import { Request, Response } from "express"
 import { Employee } from "../models/employees.model";
 import bcrypt from 'bcrypt'
+import { uploadImageToCloudinary } from "../utils/cloudinary";
 
 
 export const GetMe = async (req: Request, res: Response) => { }
@@ -46,8 +47,17 @@ export const GetEmployees = async (req: Request, res: Response) => {
 
 export const PostEmployee = async (req: Request, res: Response) => {
     try {
-        const { name, email, phone, profileImgUri, department, jobTitle, role, isActive, password, timestamps } = req.body;
+        const { name, email, phone, department, jobTitle, role, isActive, password } = req.body;
+        let profileImgUri = req.body.profileImgUri;
 
+        if (req.file) {
+            try {
+                profileImgUri = await uploadImageToCloudinary(req.file.buffer);
+            } catch (uploadError) {
+                console.error("Image Upload Failed:", uploadError);
+                return res.status(500).json({ message: "Failed to upload image" });
+            }
+        }
 
         if (!name || !email || !phone) {
             return res.status(400).json({ message: "Name, email, and phone are required." });
@@ -66,8 +76,8 @@ export const PostEmployee = async (req: Request, res: Response) => {
             department,
             jobTitle,
             role: role || "HOST",
-            isActive: isActive !== undefined ? isActive : true,
-            password,
+            isActive: isActive === undefined ? true : (isActive === 'true' || isActive === true), // Handle string from FormData & Default
+            password: finalPassword, // Use finalPassword
             requiresPasswordChange: true
         });
 
@@ -78,7 +88,8 @@ export const PostEmployee = async (req: Request, res: Response) => {
                 id: employee._id,
                 name: employee.name,
                 email: employee.email,
-                role: employee.role
+                role: employee.role,
+                profileImgUri: employee.profileImgUri
             }
         });
 
@@ -150,8 +161,18 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
             }
         });
 
+        // Handle file upload for update
+        if (req.file) {
+            try {
+                updates.profileImgUri = await uploadImageToCloudinary(req.file.buffer);
+            } catch (uploadError) {
+                console.error("Image Upload Failed:", uploadError);
+                return res.status(500).json({ message: "Failed to upload image" });
+            }
+        }
+
         // 3. Check if there is anything to update (including password)
-        if (Object.keys(updates).length === 0 && !req.body.password) {
+        if (Object.keys(updates).length === 0 && !req.body.password && !req.file) {
             return res.status(400).json({
                 success: false,
                 message: "No valid fields provided for update"
@@ -163,6 +184,11 @@ export const UpdateEmployee = async (req: Request, res: Response) => {
             const salt = await bcrypt.genSalt(10);
             updates.password = await bcrypt.hash(req.body.password, salt);
             updates.requiresPasswordChange = false;
+        }
+
+        // Handle boolean conversion for isActive if it comes as string
+        if (updates.isActive !== undefined) {
+             updates.isActive = updates.isActive === 'true' || updates.isActive === true;
         }
 
         // 5. Perform Update

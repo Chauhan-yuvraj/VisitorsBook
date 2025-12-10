@@ -6,7 +6,7 @@ import { Alert } from "react-native";
 export const useEmployeeActions = (onSuccess?: () => void) => {
     const dispatch = useAppDispatch();
 
-    const handleCreate = async (data: Partial<Employee>) => {
+    const handleCreate = async (data: Partial<Employee> | FormData) => {
         try {
             await dispatch(addEmployeeThunk(data)).unwrap();
             dispatch(fetchEmployeesThunk());
@@ -17,9 +17,9 @@ export const useEmployeeActions = (onSuccess?: () => void) => {
         }
     };
 
-    const handleUpdate = async (id: string, data: Partial<Employee>) => {
+    const handleUpdate = async (id: string, data: Partial<Employee> | FormData) => {
         try {
-            await dispatch(updateEmployeeThunk({ ...data, _id: id } as Employee)).unwrap();
+            await dispatch(updateEmployeeThunk({ id, data })).unwrap();
             dispatch(fetchEmployeesThunk());
             onSuccess?.();
             Alert.alert("Success", "Employee updated successfully");

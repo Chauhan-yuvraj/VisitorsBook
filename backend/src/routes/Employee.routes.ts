@@ -10,6 +10,7 @@ import {
   BulkImportEmployees
 } from "../controllers/Employee.controller";
 import { authorize, protect } from "../middleware/auth.middleware";
+import { upload } from "../middleware/multer.middleware";
 
 const router = Router();
 
@@ -25,13 +26,13 @@ router
   .route("/")
   .get(protect, authorize('hr', 'admin', 'executive'), GetEmployees)   // GET all employees
   // .get(GetEmployees)   // GET all employees
-  .post(protect, authorize('hr', 'admin', 'executive'), PostEmployee); // Create employee
+  .post(protect, authorize('hr', 'admin', 'executive'), upload.single('profileImg'), PostEmployee); // Create employee
 // .post(PostEmployee); // Create employee
 
 router
   .route("/:id")
   .get(protect, authorize('hr', 'admin', 'executive'), GetEmployee)     // GET one employee
-  .patch(protect, authorize('hr', 'admin', 'executive'), UpdateEmployee) // Update employee
+  .patch(protect, authorize('hr', 'admin', 'executive'), upload.single('profileImg'), UpdateEmployee) // Update employee
   .delete(protect, authorize('hr', 'admin', 'executive'), DeleteEmployee); // Delete employee
 
 export default router;

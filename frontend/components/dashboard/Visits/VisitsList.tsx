@@ -4,12 +4,15 @@ import { useVisits } from "@/hooks/Dashboard/visits/useVisits";
 import { useVisitActions } from "@/hooks/Dashboard/visits/useVisitActions";
 import { VisitCard } from "./VisitCard";
 import VisitForm from "./VisitForm";
-import { Plus, Search, Filter } from "lucide-react-native";
+import { Plus, Search, Filter, X } from "lucide-react-native";
 import { Visit, CreateVisitPayload } from "@/store/types/visit";
 
+const STATUS_FILTERS = ["PENDING", "CHECKED_IN", "CHECKED_OUT", "DECLINED", "MISSED"];
+
 export default function VisitsList() {
-    const { visits, loading, searchQuery, setSearchQuery } = useVisits();
+    const { visits, loading, searchQuery, setSearchQuery, statusFilter, setStatusFilter } = useVisits();
     const [isFormVisible, setIsFormVisible] = useState(false);
+    const [isFilterVisible, setIsFilterVisible] = useState(false);
     const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
 
     const { handleCreate, handleUpdate, handleDelete } = useVisitActions(() => {
@@ -45,20 +48,48 @@ export default function VisitsList() {
             </View>
 
             {/* Search & Filter */}
-            <View className="flex-row gap-x-3 mb-6">
-                <View className="flex-1 flex-row items-center bg-white border border-gray-200 rounded-xl px-4 h-12">
-                    <Search size={20} color="#9CA3AF" />
-                    <TextInput
-                        className="flex-1 ml-3 text-base text-gray-900"
-                        placeholder="Search visits..."
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        placeholderTextColor="#9CA3AF"
-                    />
+            <View className="flex-col mb-6">
+                <View className="flex-row gap-x-3">
+                    <View className="flex-1 flex-row items-center bg-white border border-gray-200 rounded-xl px-4 h-12">
+                        <Search size={20} color="#9CA3AF" />
+                        <TextInput
+                            className="flex-1 ml-3 text-base text-gray-900"
+                            placeholder="Search visits..."
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholderTextColor="#9CA3AF"
+                        />
+                    </View>
+                    <TouchableOpacity 
+                        onPress={() => setIsFilterVisible(!isFilterVisible)}
+                        className={`w-12 h-12 border rounded-xl items-center justify-center ${isFilterVisible || statusFilter ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+                    >
+                        <Filter size={20} color={isFilterVisible || statusFilter ? "white" : "#6B7280"} />
+                    </TouchableOpacity>
                 </View>
-                <TouchableOpacity className="w-12 h-12 bg-white border border-gray-200 rounded-xl items-center justify-center">
-                    <Filter size={20} color="#6B7280" />
-                </TouchableOpacity>
+
+                {/* Filter Options */}
+                {isFilterVisible && (
+                    <View className="flex-row flex-wrap gap-2 mt-3">
+                        <TouchableOpacity
+                            onPress={() => setStatusFilter(null)}
+                            className={`px-3 py-1.5 rounded-full border ${!statusFilter ? 'bg-gray-800 border-gray-800' : 'bg-white border-gray-200'}`}
+                        >
+                            <Text className={`text-xs font-medium ${!statusFilter ? 'text-white' : 'text-gray-600'}`}>All</Text>
+                        </TouchableOpacity>
+                        {STATUS_FILTERS.map(status => (
+                            <TouchableOpacity
+                                key={status}
+                                onPress={() => setStatusFilter(status === statusFilter ? null : status)}
+                                className={`px-3 py-1.5 rounded-full border ${status === statusFilter ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+                            >
+                                <Text className={`text-xs font-medium ${status === statusFilter ? 'text-white' : 'text-gray-600'}`}>
+                                    {status.replace('_', ' ')}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
             </View>
 
             {/* List */}

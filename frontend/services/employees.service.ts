@@ -26,10 +26,14 @@ export const getEmployees = async (): Promise<Employee[]> => {
     }
 }
 
-export const addEmployee = async (newEmployee: Partial<Employee>): Promise<Employee> => {
+export const addEmployee = async (newEmployee: Partial<Employee> | FormData): Promise<Employee> => {
     try {
         console.log("newEmployee :-", newEmployee)
-        const response = await API.post<{ success: boolean; data: Employee }>('/employees', newEmployee);
+        const isFormData = newEmployee instanceof FormData;
+        // Let the browser/adapter set the Content-Type with the boundary
+        const config = isFormData ? { headers: { 'Content-Type': undefined } } : {};
+        
+        const response = await API.post<{ success: boolean; data: Employee }>('/employees', newEmployee, config as any);
         return response.data.data;
     } catch (error) {
         console.error('Failed to add employee:', error);
@@ -37,9 +41,18 @@ export const addEmployee = async (newEmployee: Partial<Employee>): Promise<Emplo
     }
 }
 
-export const updateEmployee = async (updatedEmployee: Employee): Promise<Employee> => {
+export const updateEmployee = async (updatedEmployee: Employee | FormData, id?: string): Promise<Employee> => {
     try {
-        const response = await API.patch<{ success: boolean; data: Employee }>(`/employees/${updatedEmployee._id}`, updatedEmployee);
+        const isFormData = updatedEmployee instanceof FormData;
+        const config = isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+        
+        // If FormData, we need the ID passed separately or extracted (but FormData extraction is async/messy)
+        // So we'll require ID if it's FormData
+        const employeeId = isFormData ? id : (updatedEmployee as Employee)._id;
+
+        if (!employeeId) throw new Error("Employee ID is required for update");
+
+        const response = await API.patch<{ success: boolean; data: Employee }>(`/employees/${employeeId}`, updatedEmployee, config);
         return response.data.data;
     } catch (error) {
         console.error('Failed to update employee:', error);

@@ -6,6 +6,7 @@ export const useVisits = () => {
     const dispatch = useAppDispatch();
     const { visits, loading, error } = useAppSelector((state) => state.visits);
     const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
     useEffect(() => {
         dispatch(fetchVisitsThunk({}));
@@ -13,11 +14,14 @@ export const useVisits = () => {
 
     const filteredVisits = visits.filter((visit) => {
         const query = searchQuery.toLowerCase();
-        return (
+        const matchesSearch = 
             visit.visitor.name.toLowerCase().includes(query) ||
             visit.host.name.toLowerCase().includes(query) ||
-            visit.status.toLowerCase().includes(query)
-        );
+            visit.status.toLowerCase().includes(query);
+        
+        const matchesStatus = statusFilter ? visit.status === statusFilter : true;
+
+        return matchesSearch && matchesStatus;
     });
 
     return {
@@ -26,5 +30,7 @@ export const useVisits = () => {
         error,
         searchQuery,
         setSearchQuery,
+        statusFilter,
+        setStatusFilter,
     };
 };

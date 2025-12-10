@@ -16,11 +16,14 @@ import { Employee } from "@/store/types/user";
 import { EmployeeCard } from "./EmployeeCard";
 import EmployeeForm from "./EmployeeForm";
 
+import { UserRole } from "@/store/types/user";
+
 export default function EmployeesList() {
-  const { searchQuery, setSearchQuery, employees, loading } = useEmployees();
+  const { searchQuery, setSearchQuery, employees, loading, filterRole, setFilterRole } = useEmployees();
 
   // Local state to manage modal visibility and selected employee
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
   );
@@ -43,13 +46,15 @@ export default function EmployeesList() {
   };
 
   /** Handle form submission for add/update */
-  const handleFormSubmit = async (formData: Partial<Employee>) => {
+  const handleFormSubmit = async (formData: Partial<Employee> | FormData) => {
     if (selectedEmployee) {
       await handleUpdate(selectedEmployee._id, formData);
     } else {
       await handleCreate(formData);
     }
   };
+
+  const ROLES = Object.values(UserRole);
 
   return (
     <View className="flex-1 bg-gray-50 pt-12 px-6">
@@ -71,21 +76,49 @@ export default function EmployeesList() {
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar */}
-      <View className="flex-row mb-6 gap-3">
-        <View className="flex-1 flex-row items-center bg-white border border-gray-200 rounded-lg px-3 h-12">
-          <Search size={20} color="#9CA3AF" />
-          <TextInput
-            placeholder="Search by name, role..."
-            className="flex-1 ml-2 text-gray-700 h-full"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+      {/* Search Bar & Filter */}
+      <View className="flex-col mb-6">
+        <View className="flex-row gap-3">
+          <View className="flex-1 flex-row items-center bg-white border border-gray-200 rounded-lg px-3 h-12">
+            <Search size={20} color="#9CA3AF" />
+            <TextInput
+              placeholder="Search by name, role..."
+              className="flex-1 ml-2 text-gray-700 h-full"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+
+          <TouchableOpacity 
+            onPress={() => setIsFilterVisible(!isFilterVisible)}
+            className={`w-12 h-12 border rounded-lg items-center justify-center ${isFilterVisible || filterRole ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+          >
+            <Filter size={20} color={isFilterVisible || filterRole ? "white" : "#6B7280"} />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity className="w-12 h-12 bg-white border border-gray-200 rounded-lg items-center justify-center">
-          <Filter size={20} color="#6B7280" />
-        </TouchableOpacity>
+        {/* Filter Options */}
+        {isFilterVisible && (
+          <View className="flex-row flex-wrap gap-2 mt-3">
+            <TouchableOpacity
+              onPress={() => setFilterRole(null)}
+              className={`px-3 py-1.5 rounded-full border ${!filterRole ? 'bg-gray-800 border-gray-800' : 'bg-white border-gray-200'}`}
+            >
+              <Text className={`text-xs font-medium ${!filterRole ? 'text-white' : 'text-gray-600'}`}>All</Text>
+            </TouchableOpacity>
+            {ROLES.map(role => (
+              <TouchableOpacity
+                key={role}
+                onPress={() => setFilterRole(role === filterRole ? null : role)}
+                className={`px-3 py-1.5 rounded-full border ${role === filterRole ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+              >
+                <Text className={`text-xs font-medium ${role === filterRole ? 'text-white' : 'text-gray-600'}`}>
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Employees List */}
