@@ -18,7 +18,7 @@ export default function DashboardContent({
       return <MainDashBoard />;
 
     case "Employees":
-      // We don't need to pass navigate for the form anymore, 
+      // We don't need to pass navigate for the form anymore,
       // the form will be handled internally by this component.
       return <EmployeesList />;
 
@@ -30,9 +30,6 @@ export default function DashboardContent({
 
     case "Deliveries":
       return <DeliveriesList />;
-
-    case "Analytics":
-      return <View><Text>Analytics Component</Text></View>;
 
     default:
       return <MainDashBoard />;

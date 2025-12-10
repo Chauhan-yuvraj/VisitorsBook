@@ -63,15 +63,15 @@ const Sidebar = ({ currentTab, onNavigate }: SidebarProps) => {
     <View className="w-64 bg-surface border-r border-gray-100 flex-col justify-between pt-8 pb-8 hidden md:flex h-full">
       <View>
         {/* Logo */}
-        <View className="flex-row items-center px-8 mb-8">
-          <View className=" bg-primary rounded-lg p-1 items-center justify-center mr-3">
+        <View className="flex items-center px-8 mb-8">
+          <View className="rounded-lg p-1 items-center justify-center mr-3">
             <Image
               source={require("@/assets/images/icon.png")}
-              className="h-8 w-8"
+              className="h-16 w-16"
             />
           </View>
           <Text className="font-bold text-xl text-primary">
-            Abhyuday<Text className="text-gray-400">Bharat</Text>
+            Abhyuday<Text className="text-orange-400"> Bharat</Text>
           </Text>
         </View>
 
@@ -106,12 +106,6 @@ const Sidebar = ({ currentTab, onNavigate }: SidebarProps) => {
             label="Deliveries"
             active={currentTab === "Deliveries"}
             onPress={() => onNavigate("Deliveries")}
-          />
-          <SidebarItem
-            icon={PieChart}
-            label="Analytics"
-            active={currentTab === "Analytics"}
-            onPress={() => onNavigate("Analytics")}
           />
         </View>
       </View>
