@@ -11,12 +11,12 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Background from "@/components/ui/background";
 import { createGuestThunk, guestState } from "@/store/slices/guest.slice";
-import { Guest } from "@/store/types/guest.type";
 import { AppDispatch } from "@/store/store";
 import * as ImagePicker from "expo-image-picker"; // Import the image picker
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView as ContextSafeAreaView } from "react-native-safe-area-context"; // Recommended for modern Expo
 import { router } from "expo-router";
+import { Guest } from "@/store/types/user";
 
 // Define the type for a Guest before the ID is assigned
 type NewGuestData = Omit<Guest, "id">;
