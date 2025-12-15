@@ -4,6 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { router } from "expo-router";
 import { useAppDispatch } from "@/store/hooks";
 import { login } from "@/store/slices/auth.slice";
+import { useState } from "react";
 
 type FormValues = {
   email: string;
@@ -12,6 +13,8 @@ type FormValues = {
 
 export default function LoginForm() {
   const dispatch = useAppDispatch();
+  // 1. Add local state to control the button spinner
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const {
     control,
@@ -25,13 +28,20 @@ export default function LoginForm() {
   });
 
   const onSubmit = (data: FormValues) => {
+    // 2. Start loading
+    setIsLoggingIn(true);
+
     dispatch(login(data))
-      .unwrap()
+      .unwrap() // Wait for the promise to resolve or reject
       .then(() => {
+        // Success: Router handles the transition.
+        // We leave isLoggingIn(true) so the spinner stays until the page actually changes.
         router.replace("/(admin)/Dashboard");
       })
-      .catch(() => {
-        alert("Invalid email or password");
+      .catch((error) => {
+        // 3. Error: Stop loading so user can try again
+        setIsLoggingIn(false);
+        alert(error || "Invalid email or password");
       });
   };
 
@@ -55,6 +65,8 @@ export default function LoginForm() {
               autoCapitalize="none"
               keyboardType="email-address"
               style={{ minWidth: 300, backgroundColor: "white" }}
+              error={!!errors.email}
+              disabled={isLoggingIn} // Disable input while loading
             />
             {errors.email && (
               <HelperText type="error">{errors.email.message}</HelperText>
@@ -83,6 +95,8 @@ export default function LoginForm() {
               secureTextEntry
               onChangeText={onChange}
               style={{ minWidth: 300, backgroundColor: "white" }}
+              error={!!errors.password}
+              disabled={isLoggingIn} // Disable input while loading
             />
             {errors.password && (
               <HelperText type="error">{errors.password.message}</HelperText>
@@ -91,8 +105,11 @@ export default function LoginForm() {
         )}
       />
 
+      {/* 4. Button with Loading Prop */}
       <Button
         mode="contained"
+        loading={isLoggingIn} // Shows the spinner
+        disabled={isLoggingIn} // Prevents clicking twice
         style={{ borderRadius: 8, backgroundColor: "#000" }}
         onPress={handleSubmit(onSubmit)}
       >

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
@@ -7,80 +7,61 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { restoreSession } from '@/store/slices/auth.slice';
-import { View, ActivityIndicator } from 'react-native';
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { restoreSession } from "@/store/slices/auth.slice";
+import { View, ActivityIndicator } from "react-native";
 
 function RootStack() {
   const colorScheme = useColorScheme();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const segments = useSegments();
-  
-  // ✅ FIX: Select values individually to prevent reference warnings
+
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const isLoading = useAppSelector((state) => state.auth.isLoading);
 
   // Restore session on app startup
   useEffect(() => {
-    console.log('🔄 Checking for existing session...');
     dispatch(restoreSession());
   }, [dispatch]);
 
-  // Navigation guard - redirect based on auth state
+  // Navigation guard
   useEffect(() => {
-    if (isLoading) {
-      console.log('⏳ Loading auth state...');
-      return; // Wait for session restoration to complete
-    }
+    if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inAdminGroup = segments[0] === '(admin)';
-    const inTabsGroup = segments[0] === '(tabs)';
-    const inCanvasGroup = segments[0] === '(canvas)';
+    const inAuthGroup = segments[0] === "(auth)";
+    const inAdminGroup = segments[0] === "(admin)";
+    // const inCanvasGroup = segments[0] === "(canvas)"; // ❌ Don't protect this
 
-    console.log('📍 Current route:', segments[0], '| Auth:', isAuthenticated);
-
-    // Protected routes that require authentication
-    const protectedRoutes = [inAdminGroup, inTabsGroup, inCanvasGroup];
-    const isInProtectedRoute = protectedRoutes.some(route => route);
+    // Only protect Admin and Tabs (Dashboard) routes
+    const protectedRoutes = [inAdminGroup];
+    const isInProtectedRoute = protectedRoutes.some((route) => route);
 
     if (!isAuthenticated && isInProtectedRoute) {
-      // User is not authenticated but trying to access protected routes
-      console.log('🚫 Not authenticated, redirecting to login');
-      router.replace('/(auth)/loginPage');
+      console.log("🚫 Not authenticated, redirecting to login");
+      router.replace("/(auth)/loginPage");
     } else if (isAuthenticated && inAuthGroup) {
-      // User is authenticated but on login/signup page
-      console.log('✅ Authenticated, redirecting to home');
-      router.replace('/(admin)/Dashboard');
+      console.log("✅ Authenticated, redirecting to dashboard");
+      router.replace("/(admin)/Dashboard");
     }
   }, [isAuthenticated, segments, isLoading, router]);
 
-  // Show loading screen while checking session
   if (isLoading) {
     return (
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }}>
-          <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#fff' : '#000'} />
-        </View>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#000" />
+      </View>
     );
   }
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(guest)" options={{ headerShown: false }} />
-        <Stack.Screen name="(canvas)" options={{ headerShown: false }} />
-        <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
-        />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(guest)" />
+        <Stack.Screen name="(canvas)" />
+        <Stack.Screen name="(admin)" />
+        <Stack.Screen name="(auth)" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

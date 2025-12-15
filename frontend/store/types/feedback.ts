@@ -13,6 +13,7 @@ export interface FeedbackRecord {
     signature: SerializablePathData[];
     visitType? : string;
     feedbackText?: string;
+    audio?: string;
 }
 
 

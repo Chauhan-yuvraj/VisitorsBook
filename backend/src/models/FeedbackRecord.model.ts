@@ -8,6 +8,7 @@ const FeedbackRecordModel = new mongoose.Schema({
     visitType: { type: String , required: true },
     timeStamp: { type: String, required: true },
     feedbackText: { type: String },
+    audio: { type: String },
 
     signature: {
         type: [pathDataSchema],

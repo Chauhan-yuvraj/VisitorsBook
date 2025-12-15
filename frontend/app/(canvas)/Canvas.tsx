@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   StyleSheet,
@@ -9,6 +9,8 @@ import {
   Platform,
   ScrollView,
   Text,
+  ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,78 +18,129 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/store";
 import { updateVisitThunk } from "@/store/slices/visit.slice";
 import { saveRecord } from "@/store/slices/records.slice";
-
-// Import serialization utilities and types
-import { serializesPath } from "@/utils/serializationUtils";
-import { SerializablePathData } from "@/store/types/feedback";
-
+import { Audio } from "expo-av";
+import {
+  Mic,
+  Square,
+  Play,
+  Trash2,
+  Type,
+  FileAudio,
+} from "lucide-react-native";
+// 1. Import SegmentedButtons
+import { SegmentedButtons } from "react-native-paper";
 import Whitebg from "@/assets/background-pattern/Whitebg";
-import SignatureCanvas, {
-  SignatureCanvasRef,
-} from "@/components/SignatureCanvas";
 import ButtonUI from "@/components/ui/button";
 
 export default function CanvasScreen() {
-  const signatureRef = useRef<SignatureCanvasRef>(null);
+  const [mode, setMode] = useState<"text" | "audio">("audio");
   const [feedbackText, setFeedbackText] = useState("");
+  const [recording, setRecording] = useState<Audio.Recording | undefined>(
+    undefined
+  );
+  const [audioUri, setAudioUri] = useState<string | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | undefined>(undefined);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const dispatch = useDispatch<AppDispatch>();
   const { selectedVisit } = useSelector((state: RootState) => state.visits);
 
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        console.log("Unloading Sound");
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
+  async function startRecording() {
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Please grant audio recording permission."
+        );
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      console.log("Starting recording..");
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(recording);
+      console.log("Recording started");
+    } catch (err) {
+      console.error("Failed to start recording", err);
+      Alert.alert("Error", "Failed to start recording");
+    }
+  }
+
+  async function stopRecording() {
+    console.log("Stopping recording..");
+    if (!recording) return;
+
+    setRecording(undefined);
+    await recording.stopAndUnloadAsync();
+    const uri = recording.getURI();
+    console.log("Recording stopped and stored at", uri);
+    setAudioUri(uri);
+  }
+
+  async function playSound() {
+    if (!audioUri) return;
+    console.log("Loading Sound");
+    const { sound } = await Audio.Sound.createAsync({ uri: audioUri });
+    setSound(sound);
+
+    console.log("Playing Sound");
+    setIsPlaying(true);
+    await sound.playAsync();
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        setIsPlaying(false);
+      }
+    });
+  }
+
+  function deleteRecording() {
+    setAudioUri(null);
+    setSound(undefined);
+    setIsPlaying(false);
+  }
+
   const handleSubmit = async () => {
-    const rawSignaturePaths = signatureRef.current?.getSignature() || [];
-    const hasSignature = signatureRef.current?.hasSignature();
-
-    if (!hasSignature || rawSignaturePaths.length === 0) {
-      Alert.alert("Action Required", "Please provide a signature.");
-      return;
-    }
-
-    // --- 1. Signature Serialization ---
-    const validSignaturePaths = rawSignaturePaths.filter(
-      (pathData) =>
-        pathData &&
-        pathData.path &&
-        typeof pathData.path.toSVGString === "function"
-    );
-
-    if (validSignaturePaths.length === 0) {
+    if (!feedbackText && !audioUri) {
       Alert.alert(
         "Action Required",
-        "The signature provided was invalid. Please try again."
+        "Please provide either text feedback or an audio recording."
       );
       return;
     }
 
-    const serializedSignature: SerializablePathData[] = validSignaturePaths
-      .map(serializesPath)
-      .filter((p): p is SerializablePathData => p !== null);
-
-    if (serializedSignature.length === 0) {
-      Alert.alert(
-        "Action Required",
-        "Failed to serialize signature. Please try again."
-      );
-      return;
-    }
-
-    // --- 2. Check for Selected Visit ---
     if (selectedVisit) {
+      setIsSubmitting(true);
       try {
-        // 1. Update Visit (Checkout & Feedback)
         await dispatch(
           updateVisitThunk({
             id: selectedVisit._id,
             payload: {
               status: "CHECKED_OUT",
               feedback: {
-                comment: feedbackText,
-                rating: 5, // Default rating
+                comment: feedbackText || "Audio Feedback Provided",
+                rating: 5,
               },
             },
           })
         ).unwrap();
 
-        // 2. Save Record (for historical/legal purposes with signature)
         await dispatch(
           saveRecord({
             guestData: {
@@ -97,9 +150,10 @@ export default function CanvasScreen() {
               guestImgUri: selectedVisit.visitor.profileImgUri,
             },
             canvasPages: [],
-            signaturePaths: serializedSignature,
+            signaturePaths: [],
             visitType: selectedVisit.purpose || "General",
             feedbackText: feedbackText,
+            audio: audioUri || undefined,
           })
         ).unwrap();
 
@@ -109,17 +163,12 @@ export default function CanvasScreen() {
       } catch (error) {
         console.error("Submission failed:", error);
         Alert.alert("Error", "Failed to submit feedback. Please try again.");
+      } finally {
+        setIsSubmitting(false);
       }
     } else {
-      // --- 3. Navigation (Old Flow) ---
-      router.push({
-        pathname: "/(canvas)/GuestData",
-        params: {
-          pages: JSON.stringify([]), // Empty pages as we removed drawing
-          signature: JSON.stringify(serializedSignature),
-          feedbackText: feedbackText,
-        },
-      });
+      Alert.alert("Error", "No active visit found.");
+      router.replace("/");
     }
   };
 
@@ -129,58 +178,140 @@ export default function CanvasScreen() {
         <Whitebg />
       </View>
 
-      <SafeAreaView style={styles.content}>
+      <SafeAreaView
+        className="flex-1"
+        edges={["top", "left", "right", "bottom"]}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
         >
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1, gap: 24 }}
+            contentContainerStyle={{ flexGrow: 1, padding: 24, gap: 24 }}
             showsVerticalScrollIndicator={false}
           >
             {/* Header */}
-            <View>
-              <Text className="text-2xl font-bold text-gray-800">
+            <View className="mt-2">
+              <Text className="text-3xl font-bold text-gray-900">
                 Your Feedback
               </Text>
-              <Text className="text-gray-500">
-                Please write your feedback and sign below.
+              <Text className="text-base text-gray-500 mt-1">
+                Choose how you want to leave your feedback
               </Text>
             </View>
 
-            {/* Text Input Area */}
-            <View className="bg-white rounded-2xl p-4 border border-gray-200 min-h-[200px] shadow-sm">
-              <TextInput
-                multiline
-                placeholder="Write your feedback here..."
-                style={styles.textInput}
-                value={feedbackText}
-                onChangeText={setFeedbackText}
-                textAlignVertical="top"
+            {/* Redesigned Toggle */}
+            <View className="bg-gray-100/80 p-1.5 rounded-2xl border border-gray-200">
+              <SegmentedButtons
+                value={mode}
+                onValueChange={(val) => setMode(val as "text" | "audio")}
+                buttons={[
+                  {
+                    value: "text",
+                    label: "Text",
+                    icon: ({ color }) => <Type size={20} color={color} />,
+                    style: { borderRadius: 12 },
+                  },
+                  {
+                    value: "audio",
+                    label: "Voice",
+                    icon: ({ color }) => <Mic size={20} color={color} />,
+                    style: { borderRadius: 12 },
+                  },
+                ]}
+                theme={{
+                  colors: {
+                    secondaryContainer: "#ffffff",
+                    onSecondaryContainer: "#10b981", // Emerald-500
+                    outline: "transparent",
+                  },
+                }}
+                style={{ backgroundColor: "transparent" }}
               />
             </View>
 
-            {/* Signature Area */}
-            <View className="gap-y-2">
-              <Text className="text-lg font-semibold text-gray-700">
-                Signature
-              </Text>
-              <View className="h-64 bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
-                <SignatureCanvas ref={signatureRef} />
-              </View>
-              <View className="flex-row justify-end">
-                <Text
-                  onPress={() => signatureRef.current?.clear()}
-                  className="text-red-500 font-medium px-2 py-1"
-                >
-                  Clear Signature
-                </Text>
-              </View>
+            {/* Content Area */}
+            <View className="bg-white rounded-2xl p-6 border border-gray-200 min-h-[250px] shadow-sm justify-center">
+              {mode === "text" ? (
+                <TextInput
+                  multiline
+                  placeholder="Write your feedback here..."
+                  style={styles.textInput}
+                  value={feedbackText}
+                  onChangeText={setFeedbackText}
+                  textAlignVertical="top"
+                />
+              ) : (
+                <View className="items-center gap-6">
+                  {audioUri ? (
+                    <View className="w-full items-center gap-4">
+                      <View className="bg-green-50 p-4 rounded-full">
+                        <FileAudio size={48} color="#22c55e" />
+                      </View>
+                      <Text className="text-green-600 font-medium">
+                        Audio Recorded
+                      </Text>
+
+                      <View className="flex-row gap-4 mt-2">
+                        <TouchableOpacity
+                          onPress={playSound}
+                          disabled={isPlaying}
+                          className="bg-blue-500 px-6 py-3 rounded-full flex-row items-center gap-2"
+                        >
+                          <Play size={20} color="white" />
+                          <Text className="text-white font-semibold">
+                            {isPlaying ? "Playing..." : "Play"}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={deleteRecording}
+                          className="bg-red-100 px-6 py-3 rounded-full flex-row items-center gap-2"
+                        >
+                          <Trash2 size={20} color="#ef4444" />
+                          <Text className="text-red-500 font-semibold">
+                            Delete
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <>
+                      <Text className="text-gray-500 text-center mb-4">
+                        Tap the microphone to start recording your feedback
+                      </Text>
+                      <TouchableOpacity
+                        onPress={recording ? stopRecording : startRecording}
+                        className={`w-24 h-24 rounded-full items-center justify-center ${
+                          recording ? "bg-red-500" : "bg-blue-500"
+                        } shadow-lg`}
+                      >
+                        {recording ? (
+                          <Square size={40} color="white" />
+                        ) : (
+                          <Mic size={40} color="white" />
+                        )}
+                      </TouchableOpacity>
+                      <Text
+                        className={`font-semibold text-lg ${
+                          recording ? "text-red-500" : "text-blue-500"
+                        }`}
+                      >
+                        {recording ? "Recording..." : "Tap to Record"}
+                      </Text>
+                    </>
+                  )}
+                </View>
+              )}
             </View>
 
             {/* Submit Button */}
-            <View className="mb-8">
-              <ButtonUI text={selectedVisit ? "Submit" : "Next"} onPress={handleSubmit} />
+            <View className="mb-8 mt-auto">
+              {isSubmitting ? (
+                <ActivityIndicator size="large" color="#10b981" />
+              ) : (
+                <ButtonUI text="Submit Feedback" onPress={handleSubmit} />
+              )}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -190,14 +321,10 @@ export default function CanvasScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    padding: 24,
-  },
   textInput: {
     flex: 1,
     fontSize: 16,
     color: "#333",
-    minHeight: 150,
+    minHeight: 200,
   },
 });

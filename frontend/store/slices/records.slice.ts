@@ -24,6 +24,7 @@ type SaveRecordPayload = {
   signaturePaths: SerializablePathData[];
   visitType: string;
   feedbackText?: string;
+  audio?: string;
 };
 
 
@@ -42,9 +43,9 @@ export const saveRecord = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const { guestData, canvasPages, signaturePaths, visitType, feedbackText } = data;
+      const { guestData, canvasPages, signaturePaths, visitType, feedbackText, audio } = data;
 
-      const record = await saveUserRecord(guestData, canvasPages, signaturePaths, visitType, feedbackText);
+      const record = await saveUserRecord(guestData, canvasPages, signaturePaths, visitType, feedbackText, audio);
       return record as FeedbackRecord;
 
     } catch (error: any) {

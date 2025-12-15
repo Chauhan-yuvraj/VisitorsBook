@@ -25,6 +25,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "expo": "~54.0.27",
+    "expo-av": "~16.0.8",
     "expo-constants": "~18.0.11",
     "expo-document-picker": "~14.0.8",
     "expo-file-system": "~19.0.20",

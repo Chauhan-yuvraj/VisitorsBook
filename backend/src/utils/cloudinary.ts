@@ -2,24 +2,29 @@
 declare var FormData: any;
 declare var Blob: any;
 
-export const uploadImageToCloudinary = async (fileBuffer: Buffer): Promise<string> => {
+export const uploadFileToCloudinary = async (fileBuffer: Buffer, resourceType: 'image' | 'video' | 'audio' | 'auto' = 'auto'): Promise<string> => {
     try {
-        console.log("Starting Cloudinary Upload (Unsigned)...");
+        console.log(`Starting Cloudinary Upload (${resourceType})...`);
         const formData = new FormData();
-        // Convert Buffer to Blob (Node.js 18+ supports global Blob)
-        const blob = new Blob([fileBuffer], { type: 'image/jpeg' });
-        
-        formData.append('file', blob, 'upload.jpg');
+
+        // Convert Buffer to Blob
+        const blob = new Blob([fileBuffer]);
+
+        formData.append('file', blob, 'upload');
         formData.append('upload_preset', 'Abhyuday');
         formData.append('cloud_name', 'drmhveetn');
 
-        const response = await fetch("https://api.cloudinary.com/v1_1/drmhveetn/image/upload", {
+        // Cloudinary API URL: https://api.cloudinary.com/v1_1/<cloud_name>/<resource_type>/upload
+        // Audio is treated as 'video' in Cloudinary
+        const type = resourceType === 'audio' ? 'video' : resourceType;
+
+        const response = await fetch(`https://api.cloudinary.com/v1_1/drmhveetn/${type}/upload`, {
             method: "POST",
             body: formData
         });
 
         const data = await response.json() as any;
-        
+
         if (data.secure_url) {
             return data.secure_url;
         } else {
@@ -31,3 +36,5 @@ export const uploadImageToCloudinary = async (fileBuffer: Buffer): Promise<strin
         throw error;
     }
 };
+
+export const uploadImageToCloudinary = (fileBuffer: Buffer) => uploadFileToCloudinary(fileBuffer, 'image');

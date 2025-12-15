@@ -7,26 +7,36 @@ export async function saveUserRecord(
     canvasPages: SerializableCanvasPage[],
     signaturePaths: SerializablePathData[],
     visitType: string = 'general',
-    feedbackText?: string
+    feedbackText?: string,
+    audio?: string
 ): Promise<FeedbackRecord> {
     console.log('Starting API call to save user record...');
 
     try {
-        console.log('Successfully received serialized pages and signature.');
-        console.log(`Canvas Pages Count: ${canvasPages.length}`);
-        console.log(`Signature Paths Count: ${signaturePaths.length}`);
+        const formData = new FormData();
 
-        const newRecord: FeedbackRecord = {
-            guest: guestData,
-            pages: canvasPages,
-            signature: signaturePaths,
-            visitType: visitType,
-            feedbackText: feedbackText
+        // Append simple fields
+        formData.append('visitType', visitType);
+        if (feedbackText) formData.append('feedbackText', feedbackText);
+
+        // Append complex objects as JSON strings
+        formData.append('guest', JSON.stringify(guestData));
+        formData.append('pages', JSON.stringify(canvasPages));
+        formData.append('signature', JSON.stringify(signaturePaths));
+
+        // Append Audio File
+        if (audio) {
+            const filename = audio.split('/').pop() || 'audio.m4a';
+            const match = /\.(\w+)$/.exec(filename);
+            const type = match ? `audio/${match[1]}` : `audio/m4a`;
+
+            // @ts-ignore
+            formData.append('audio', { uri: audio, name: filename, type });
         }
 
-        const response = await API.post("/records", newRecord, {
+        const response = await API.post("/records", formData, {
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "multipart/form-data",
             },
         });
         return response.data;

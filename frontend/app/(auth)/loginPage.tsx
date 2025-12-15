@@ -10,28 +10,35 @@ export default function loginPage() {
     <Background>
       <SafeAreaView className="flex-1">
         <View className="flex w-full h-full items-center justify-center px-4 gap-y-6">
-          <View className="flex justify-center items-center">
-            <Text className="text-7xl font-bold text-center p-4">Login</Text>
+          {/* Header Section */}
+          <View className="relative flex justify-center items-center p-6">
+            {/* Gradient Background Layer */}
             <LinearGradient
               colors={[
-                "rgba(255,255,255,0.95)", // outer edges strong white
-                "rgba(255,255,255,0.50)",
-                "rgba(255,255,255,0.30)",
-                "rgba(255,255,255,0.00)", // perfect clear center
+                "rgba(255,255,255,0.0)",
+                "rgba(255,255,255,0.5)",
+                "rgba(255,255,255,0.8)",
               ]}
-              start={{ x: 0, y: 1 }} // fade from top
-              end={{ x: 0, y: 0 }} // to bottom
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
               style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
                 bottom: 0,
-                zIndex: 5,
+                borderRadius: 20,
               }}
             />
+
+            {/* Text Layer (Now clearly visible on top) */}
+            <Text className="text-7xl font-bold text-center text-black z-10">
+              Login
+            </Text>
           </View>
-          <View className="flex flex-row justify-center items-center  ">
+
+          {/* Form Section */}
+          <View className="flex flex-row justify-center items-center">
             <LoginForm />
           </View>
         </View>
