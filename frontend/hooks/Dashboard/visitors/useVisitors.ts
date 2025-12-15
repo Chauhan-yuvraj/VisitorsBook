@@ -28,10 +28,6 @@ export function useVisitors() {
       
       let matchesFilter = true;
       if (filterType === 'VIP') {
-        // Assuming there is an isVip field, if not we can skip or add it. 
-        // Checking the type definition would be good, but for now let's assume or check context.
-        // The previous context showed isVip in VisitSnapshot, likely in Visitor too.
-        // If not, I'll just filter by 'WITH_COMPANY' for now.
         matchesFilter = true; // Placeholder if isVip is missing
       } else if (filterType === 'WITH_COMPANY') {
         matchesFilter = !!item.companyNameFallback;

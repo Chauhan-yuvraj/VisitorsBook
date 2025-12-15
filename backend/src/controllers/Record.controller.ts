@@ -24,7 +24,7 @@ export const postRecord = async (req: Request, res: Response) => {
         if (typeof pages === 'string') pages = JSON.parse(pages);
 
         let audioUrl = undefined;
-        let imageUrl = undefined;
+        let imageUrls: string[] = [];
 
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
@@ -33,9 +33,10 @@ export const postRecord = async (req: Request, res: Response) => {
             audioUrl = await uploadFileToCloudinary(files.audio[0].buffer, 'video');
         }
 
-        if (files?.image?.[0]) {
-            // Upload image to Cloudinary
-            imageUrl = await uploadFileToCloudinary(files.image[0].buffer, 'image');
+        if (files?.images && files.images.length > 0) {
+            // Upload all images to Cloudinary
+            const uploadPromises = files.images.map(file => uploadFileToCloudinary(file.buffer, 'image'));
+            imageUrls = await Promise.all(uploadPromises);
         }
 
         const visitor = await Visitor.findOne({ email: guest.guestEmail });
@@ -64,7 +65,7 @@ export const postRecord = async (req: Request, res: Response) => {
             pages,
             feedbackText,
             audio: audioUrl,
-            image: imageUrl
+            images: imageUrls
         });
         await newRecord.save();
         res.status(201).json({ message: "Record created successfully" });

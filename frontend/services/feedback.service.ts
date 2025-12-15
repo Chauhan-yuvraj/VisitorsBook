@@ -9,7 +9,7 @@ export async function saveUserRecord(
     visitType: string = 'general',
     feedbackText?: string,
     audio?: string,
-    image?: string
+    images?: string[]
 ): Promise<FeedbackRecord> {
     console.log('Starting API call to save user record...');
 
@@ -35,14 +35,16 @@ export async function saveUserRecord(
             formData.append('audio', { uri: audio, name: filename, type });
         }
 
-        // Append Image File
-        if (image) {
-            const filename = image.split('/').pop() || 'image.jpg';
-            const match = /\.(\w+)$/.exec(filename);
-            const type = match ? `image/${match[1]}` : `image/jpeg`;
+        // Append Image Files
+        if (images && images.length > 0) {
+            images.forEach((imageUri, index) => {
+                const filename = imageUri.split('/').pop() || `image_${index}.jpg`;
+                const match = /\.(\w+)$/.exec(filename);
+                const type = match ? `image/${match[1]}` : `image/jpeg`;
 
-            // @ts-ignore
-            formData.append('image', { uri: image, name: filename, type });
+                // @ts-ignore
+                formData.append('images', { uri: imageUri, name: filename, type });
+            });
         }
 
         const response = await API.post("/records", formData, {
