@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Visitor } from "../models/visitor.model";
+import { uploadFileToCloudinary } from "../utils/cloudinary";
 
 export const GetVisitors = async (req: Request, res: Response) => {
     try {
@@ -46,7 +47,6 @@ export const PostVisitor = async (req: Request, res: Response) => {
             name, 
             email, 
             phone, 
-            profileImgUri, 
             isVip, 
             isBlocked, 
             notes, 
@@ -58,13 +58,18 @@ export const PostVisitor = async (req: Request, res: Response) => {
             return res.status(400).json({ message: "Name is required." });
         }
 
+        let profileImgUri = undefined;
+        if (req.file) {
+            profileImgUri = await uploadFileToCloudinary(req.file.buffer, 'image');
+        }
+
         const visitor = await Visitor.create({
             name,
             email,
             phone,
             profileImgUri,
-            isVip: isVip || false,
-            isBlocked: isBlocked || false,
+            isVip: isVip === 'true' || isVip === true, // Handle string from FormData
+            isBlocked: isBlocked === 'true' || isBlocked === true,
             notes,
             organizationId,
             companyNameFallback
@@ -107,11 +112,22 @@ export const UpdateVisitor = async (req: Request, res: Response) => {
         
         Object.keys(req.body).forEach((key) => {
             if (allowedUpdates.includes(key)) {
-                updates[key] = req.body[key];
+                // Handle boolean conversions for FormData
+                if (key === 'isVip' || key === 'isBlocked') {
+                    updates[key] = req.body[key] === 'true' || req.body[key] === true;
+                } else {
+                    updates[key] = req.body[key];
+                }
             }
         });
 
-        if (Object.keys(updates).length === 0) {
+        // Handle Image Upload
+        if (req.file) {
+            const profileImgUri = await uploadFileToCloudinary(req.file.buffer, 'image');
+            updates['profileImgUri'] = profileImgUri;
+        }
+
+        if (Object.keys(updates).length === 0 && !req.file) {
             return res.status(400).json({
                 success: false,
                 message: "No valid fields provided for update"

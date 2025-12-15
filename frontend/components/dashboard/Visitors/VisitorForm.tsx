@@ -19,8 +19,12 @@ import {
   Phone,
   Building,
   FileText,
+  Camera,
+  Image as ImageIcon,
 } from "lucide-react-native";
 import { Visitor } from "@/store/types/visitor";
+import { useImagePicker } from "@/hooks/useImagePicker";
+import { Image } from "react-native";
 
 interface VisitorFormProps {
   visible: boolean;
@@ -45,6 +49,11 @@ export default function VisitorForm({
     notes: "",
     isVip: false,
     isBlocked: false,
+    profileImgUri: null as string | null,
+  });
+
+  const { handleTakePhoto, handleChooseFromGallery } = useImagePicker((uri) => {
+    setFormData((prev) => ({ ...prev, profileImgUri: uri }));
   });
 
   useEffect(() => {
@@ -57,6 +66,7 @@ export default function VisitorForm({
         notes: initialData.notes || "",
         isVip: initialData.isVip ?? false,
         isBlocked: initialData.isBlocked ?? false,
+        profileImgUri: initialData.profileImgUri || null,
       });
     } else {
       setFormData({
@@ -67,6 +77,7 @@ export default function VisitorForm({
         notes: "",
         isVip: false,
         isBlocked: false,
+        profileImgUri: null,
       });
     }
   }, [initialData, visible]);
@@ -131,6 +142,37 @@ export default function VisitorForm({
           </View>
 
           <ScrollView className="flex-1 px-6 py-6" showsVerticalScrollIndicator={false}>
+            
+            {/* Image Picker Section */}
+            <View className="mb-6 items-center">
+              <View className="relative">
+                <View className="w-24 h-24 rounded-full bg-gray-100 overflow-hidden border-2 border-gray-200 items-center justify-center">
+                  {formData.profileImgUri ? (
+                    <Image
+                      source={{ uri: formData.profileImgUri }}
+                      className="w-full h-full"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <User size={40} color="#9CA3AF" />
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={handleChooseFromGallery}
+                  className="absolute bottom-0 right-0 bg-primary p-2 rounded-full border-2 border-white shadow-sm"
+                >
+                  <ImageIcon size={16} color="white" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleTakePhoto}
+                  className="absolute bottom-0 -left-2 bg-primary p-2 rounded-full border-2 border-white shadow-sm"
+                >
+                  <Camera size={16} color="white" />
+                </TouchableOpacity>
+              </View>
+              <Text className="text-xs text-gray-500 mt-2">Tap icons to change photo</Text>
+            </View>
+
             <FormInput
               label="Full Name *"
               value={formData.name}

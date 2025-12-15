@@ -17,9 +17,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView as ContextSafeAreaView } from "react-native-safe-area-context"; // Recommended for modern Expo
 import { router } from "expo-router";
 import { Guest } from "@/store/types/user";
+import { Visitor } from "@/store/types/visitor";
 
 // Define the type for a Guest before the ID is assigned
-type NewGuestData = Omit<Guest, "id">;
+type NewGuestData = Partial<Visitor>;
 
 export default function CreateGuestScreen() {
   const dispatch = useDispatch<AppDispatch>();
@@ -28,7 +29,7 @@ export default function CreateGuestScreen() {
   );
 
   const [name, setName] = useState("");
-  const [position, setPosition] = useState("");
+  const [company, setCompany] = useState("");
   // State to hold the local URI of the selected image
   const [localImageUri, setLocalImageUri] = useState<string | null>(null);
 
@@ -60,28 +61,28 @@ export default function CreateGuestScreen() {
   };
 
   const handleSubmit = () => {
-    if (!name.trim() || !position.trim() || !localImageUri) {
+    if (!name.trim() || !company.trim() || !localImageUri) {
       Alert.alert(
         "Required Fields",
-        "Please enter the guest's name, position, and select an image."
+        "Please enter the guest's name, company, and select an image."
       );
       return;
     }
 
     const newGuest: NewGuestData = {
       name: name.trim(),
-      position: position.trim(),
+      companyNameFallback: company.trim(),
       // Store the local URI/path. This will be used by GuestCard for display.
-      img: localImageUri,
+      profileImgUri: localImageUri,
     };
 
-    dispatch(createGuestThunk(newGuest as Guest))
+    dispatch(createGuestThunk(newGuest as Visitor))
       .unwrap()
       .then(() => {
         Alert.alert("Success", `${name} has been added successfully.`);
         // Clear the form
         setName("");
-        setPosition("");
+        setCompany("");
         setLocalImageUri(null); // Clear image preview
         router.replace("/(guest)/selectGuest");
       })
@@ -106,13 +107,13 @@ export default function CreateGuestScreen() {
           />
 
           <Text className="text-gray-700 font-semibold mb-1">
-            Position / Title:
+            Company:
           </Text>
           <TextInput
             className="border border-gray-300 p-3 rounded-lg mb-4 bg-white text-gray-800"
-            placeholder="e.g., VIP, Speaker"
-            value={position}
-            onChangeText={setPosition}
+            placeholder="e.g., Acme Corp"
+            value={company}
+            onChangeText={setCompany}
           />
 
           {/* --- IMAGE PICKER SECTION --- */}

@@ -8,7 +8,8 @@ export async function saveUserRecord(
     signaturePaths: SerializablePathData[],
     visitType: string = 'general',
     feedbackText?: string,
-    audio?: string
+    audio?: string,
+    image?: string
 ): Promise<FeedbackRecord> {
     console.log('Starting API call to save user record...');
 
@@ -32,6 +33,16 @@ export async function saveUserRecord(
 
             // @ts-ignore
             formData.append('audio', { uri: audio, name: filename, type });
+        }
+
+        // Append Image File
+        if (image) {
+            const filename = image.split('/').pop() || 'image.jpg';
+            const match = /\.(\w+)$/.exec(filename);
+            const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+            // @ts-ignore
+            formData.append('image', { uri: image, name: filename, type });
         }
 
         const response = await API.post("/records", formData, {

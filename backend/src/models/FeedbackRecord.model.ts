@@ -9,6 +9,7 @@ const FeedbackRecordModel = new mongoose.Schema({
     timeStamp: { type: String, required: true },
     feedbackText: { type: String },
     audio: { type: String },
+    image: { type: String },
 
     signature: {
         type: [pathDataSchema],

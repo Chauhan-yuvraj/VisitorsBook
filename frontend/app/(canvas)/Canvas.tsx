@@ -11,6 +11,7 @@ import {
   Text,
   ActivityIndicator,
   TouchableOpacity,
+  Image
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -26,11 +27,15 @@ import {
   Trash2,
   Type,
   FileAudio,
+  Camera,
+  Image as ImageIcon,
+  X,
 } from "lucide-react-native";
 // 1. Import SegmentedButtons
 import { SegmentedButtons } from "react-native-paper";
 import Whitebg from "@/assets/background-pattern/Whitebg";
 import ButtonUI from "@/components/ui/button";
+import { useImagePicker } from "@/hooks/useImagePicker";
 
 export default function CanvasScreen() {
   const [mode, setMode] = useState<"text" | "audio">("audio");
@@ -39,12 +44,17 @@ export default function CanvasScreen() {
     undefined
   );
   const [audioUri, setAudioUri] = useState<string | null>(null);
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [sound, setSound] = useState<Audio.Sound | undefined>(undefined);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
   const { selectedVisit } = useSelector((state: RootState) => state.visits);
+
+  const { handleTakePhoto, handleChooseFromGallery } = useImagePicker((uri) => {
+    setImageUri(uri);
+  });
 
   useEffect(() => {
     return () => {
@@ -154,6 +164,7 @@ export default function CanvasScreen() {
             visitType: selectedVisit.purpose || "General",
             feedbackText: feedbackText,
             audio: audioUri || undefined,
+            image: imageUri || undefined,
           })
         ).unwrap();
 
@@ -301,6 +312,45 @@ export default function CanvasScreen() {
                       </Text>
                     </>
                   )}
+                </View>
+              )}
+            </View>
+
+            {/* Image Picker Section */}
+            <View className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
+              <Text className="text-lg font-semibold text-gray-900 mb-3">
+                Add a Photo (Optional)
+              </Text>
+              {imageUri ? (
+                <View className="relative rounded-xl overflow-hidden h-48 w-full bg-gray-100">
+                  <Image
+                    source={{ uri: imageUri }}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setImageUri(null)}
+                    className="absolute top-2 right-2 bg-black/50 p-2 rounded-full"
+                  >
+                    <X size={20} color="white" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View className="flex-row gap-4">
+                  <TouchableOpacity
+                    onPress={handleTakePhoto}
+                    className="flex-1 bg-blue-50 p-4 rounded-xl items-center gap-2 border border-blue-100"
+                  >
+                    <Camera size={24} color="#3b82f6" />
+                    <Text className="text-blue-600 font-medium">Take Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleChooseFromGallery}
+                    className="flex-1 bg-purple-50 p-4 rounded-xl items-center gap-2 border border-purple-100"
+                  >
+                    <ImageIcon size={24} color="#a855f7" />
+                    <Text className="text-purple-600 font-medium">Gallery</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>

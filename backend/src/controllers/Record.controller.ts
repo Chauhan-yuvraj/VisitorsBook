@@ -24,9 +24,18 @@ export const postRecord = async (req: Request, res: Response) => {
         if (typeof pages === 'string') pages = JSON.parse(pages);
 
         let audioUrl = undefined;
-        if (req.file) {
+        let imageUrl = undefined;
+
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+        if (files?.audio?.[0]) {
             // Upload audio to Cloudinary as 'video' resource type (standard for audio)
-            audioUrl = await uploadFileToCloudinary(req.file.buffer, 'video');
+            audioUrl = await uploadFileToCloudinary(files.audio[0].buffer, 'video');
+        }
+
+        if (files?.image?.[0]) {
+            // Upload image to Cloudinary
+            imageUrl = await uploadFileToCloudinary(files.image[0].buffer, 'image');
         }
 
         const visitor = await Visitor.findOne({ email: guest.guestEmail });
@@ -54,7 +63,8 @@ export const postRecord = async (req: Request, res: Response) => {
             signature,
             pages,
             feedbackText,
-            audio: audioUrl
+            audio: audioUrl,
+            image: imageUrl
         });
         await newRecord.save();
         res.status(201).json({ message: "Record created successfully" });
