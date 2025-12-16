@@ -1,5 +1,6 @@
 import Background from "@/components/Background";
 import Buttons from "@/components/Buttons";
+import { useAppSelector } from "@/store/hooks";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { User } from "lucide-react-native";
@@ -16,12 +17,23 @@ export default function HomeScreen() {
   //   return () => clearTimeout(timeout);
   // }, []);
 
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+
+  const handleProfilePress = () => {
+    console.log("profile Clicked");
+    if (isAuthenticated) {
+      router.push("/(admin)/Dashboard");
+    } else {
+      router.push("/(auth)/loginPage");
+    }
+  };
+
   return (
     <Background>
       <SafeAreaView className="flex-1 w-full">
-        <View className="flex flex-row justify-end rounded-full  p-8">
+        <View className="flex flex-row justify-end rounded-full  p-8"> 
           <View className="border border-black rounded-full p-3 active:bg-black/10">
-            <Pressable onPress={() => router.push("/(auth)/loginPage")}>
+            <Pressable onPress={handleProfilePress}>
               <User color="#555" />
             </Pressable>
           </View>

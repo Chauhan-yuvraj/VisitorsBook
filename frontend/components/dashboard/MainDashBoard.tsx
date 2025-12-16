@@ -1,54 +1,88 @@
-import { View, Text, ScrollView, TouchableOpacity, Modal } from "react-native";
-import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  RefreshControl,
+} from "react-native";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, Package } from "lucide-react-native";
+import { format, isToday } from "date-fns";
+
 import StatCard from "@/app/(admin)/StatsCard";
 import VisitorRow from "@/app/(admin)/VisitorRow";
 import UpcomingTimeline from "@/app/(admin)/UpcomingTimeline";
 import VisitForm from "./Visits/VisitForm";
 import DeliveryForm from "./Deliveries/DeliveryForm";
+
 import { useVisitActions } from "@/hooks/Dashboard/visits/useVisitActions";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchVisitsThunk } from "@/store/slices/visit.slice";
 import { fetchDeliveriesThunk } from "@/store/slices/delivery.slice";
-import { format, isToday } from "date-fns";
 
 export default function MainDashBoard() {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const [isCheckInVisible, setIsCheckInVisible] = useState(false);
   const [isDeliveryVisible, setIsDeliveryVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // Local loading state
+
   const { handleCreate } = useVisitActions(() => setIsCheckInVisible(false));
 
   const { visits } = useAppSelector((state) => state.visits);
   const { deliveries } = useAppSelector((state) => state.delivery);
 
-  useEffect(() => {
-    dispatch(fetchVisitsThunk({}));
-    dispatch(fetchDeliveriesThunk());
+  // Fetch visits and deliveries on mount
+  const loadData = useCallback(async () => {
+    await Promise.all([
+      dispatch(fetchVisitsThunk({})),
+      dispatch(fetchDeliveriesThunk()),
+    ]);
   }, [dispatch]);
 
-  // Calculate Stats
-  const checkedInCount = visits.filter((v) => v.status === "CHECKED_IN").length;
-  // Expected: Status is PENDING and Scheduled Date is Today
-  const expectedCount = visits.filter(
-    (v) =>
-      v.status === "PENDING" &&
-      v.scheduledCheckIn &&
-      isToday(new Date(v.scheduledCheckIn))
-  ).length;
-  const pendingPackagesCount = deliveries.filter(
-    (d) => d.status === "PENDING"
-  ).length;
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  // Recent Activity (Last 5 visits)
-  const recentVisits = [...visits]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt || 0).getTime() -
-        new Date(a.createdAt || 0).getTime()
-    )
-    .slice(0, 5);
+  // handle Pull to refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  const dashboardStats = useMemo(() => {
+    const checkedIn = visits.filter((v) => v.status === "CHECKED_IN").length;
+
+    const expected = visits.filter(
+      (v) =>
+        v.status === "PENDING" &&
+        v.scheduledCheckIn &&
+        isToday(new Date(v.scheduledCheckIn))
+    ).length;
+
+    const packages = deliveries.filter((d) => d.status === "PENDING").length;
+
+    const recent = [...visits]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
+      )
+      .slice(0, 5);
+
+    return {
+      checkedInCount: checkedIn,
+      expectedCount: expected,
+      pendingPackagesCount: packages,
+      recentVisits: recent,
+    };
+  }, [visits, deliveries]);
+
+  const { checkedInCount, expectedCount, pendingPackagesCount, recentVisits } =
+    dashboardStats;
 
   return (
     <View className="flex-1">
@@ -72,6 +106,9 @@ export default function MainDashBoard() {
         className="flex-1 px-6"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }} // Add bottom padding for scroll
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* 1. Stats Grid */}
         <View className="flex-row flex-wrap -mx-1 mb-6 mt-6">

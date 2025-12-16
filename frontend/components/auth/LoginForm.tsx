@@ -34,8 +34,6 @@ export default function LoginForm() {
     dispatch(login(data))
       .unwrap() // Wait for the promise to resolve or reject
       .then(() => {
-        // Success: Router handles the transition.
-        // We leave isLoggingIn(true) so the spinner stays until the page actually changes.
         router.replace("/(admin)/Dashboard");
       })
       .catch((error) => {

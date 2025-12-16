@@ -7,13 +7,22 @@ export interface UserRecord {
     featured?: boolean;
 }
 export interface FeedbackRecord {
-    id?: string;
-    guest: UserRecord;
+    _id?: string;
+    VisitorId: {
+        _id: string;
+        name: string;
+        email: string;
+        phone: string;
+        company: string;
+        profileImgUri?: string;
+    };
     pages: SerializableCanvasPage[];
     signature: SerializablePathData[];
-    visitType? : string;
+    visitType: string;
+    timeStamp: string;
     feedbackText?: string;
     audio?: string;
+    images?: string[];
 }
 
 

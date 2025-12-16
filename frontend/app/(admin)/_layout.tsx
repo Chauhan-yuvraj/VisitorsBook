@@ -34,17 +34,6 @@ export default function AdminLayout() {
       />
 
       <Stack.Screen
-        name="employees"
-        options={{
-          headerTitle: () => (
-            <Text style={{ fontSize: 18, fontWeight: "600", color: "#000" }}>
-              Employees
-            </Text>
-          ),
-        }}
-      />
-
-      <Stack.Screen
         name="RecordDetailScreen"
         options={{
           headerLeft: () => (

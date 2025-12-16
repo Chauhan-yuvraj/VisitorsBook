@@ -1,34 +1,79 @@
-import React from "react";
-import { View, Text, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import DisplayCanvas from "@/components/DisplayCanvas";
+import React, { useState, useEffect } from "react";
 import {
-  SerializableCanvasPage,
-  SerializablePathData,
-} from "@/store/types/feedback";
+  View,
+  Text,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
+import { Audio } from "expo-av";
+import { Play, Pause, X } from "lucide-react-native";
 
-const SignatureDisplay = ({
-  signaturePaths,
-}: {
-  signaturePaths: SerializablePathData[];
-}) => {
-  const signaturePage: SerializableCanvasPage = {
-    id: "signature",
-    paths: signaturePaths,
-  };
+// ... (AudioPlayer component remains unchanged)
+const AudioPlayer = ({ uri }: { uri: string }) => {
+  const [sound, setSound] = useState<Audio.Sound>();
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  async function playSound() {
+    if (sound) {
+      if (isPlaying) {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+      } else {
+        await sound.playAsync();
+        setIsPlaying(true);
+      }
+    } else {
+      const { sound: newSound } = await Audio.Sound.createAsync({ uri });
+      setSound(newSound);
+      setIsPlaying(true);
+      await newSound.playAsync();
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          setIsPlaying(false);
+          newSound.setPositionAsync(0);
+        }
+      });
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
 
   return (
-    <View className="w-full h-[150px] mb-5 border border-gray-300 rounded-lg overflow-hidden bg-white">
-      <DisplayCanvas page={signaturePage} />
+    <View className="bg-white p-4 rounded-xl border border-gray-200 flex-row items-center mb-4">
+      <TouchableOpacity
+        onPress={playSound}
+        className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center mr-3"
+      >
+        {isPlaying ? (
+          <Pause size={20} color="#3b82f6" />
+        ) : (
+          <Play size={20} color="#3b82f6" />
+        )}
+      </TouchableOpacity>
+      <View>
+        <Text className="font-medium text-gray-900">Audio Feedback</Text>
+        <Text className="text-xs text-gray-500">Tap to play recording</Text>
+      </View>
     </View>
   );
 };
 
 export default function RecordDetailScreen() {
   const { recordJson } = useLocalSearchParams();
-
   const record: any = recordJson ? JSON.parse(recordJson as string) : null;
+  
+  // 1. New State for the full-screen image
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   if (!record) {
     return (
@@ -43,43 +88,106 @@ export default function RecordDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-        <Text className="text-2xl font-bold mb-5 text-gray-800">
-          Visit Details for {record.VisitorId?.name || "Unknown Visitor"}
+        {/* Header Section */}
+        <Text className="text-2xl text-center font-bold mb-1 text-gray-800">
+          Visit Details
         </Text>
-        <Text className="text-xl font-semibold mt-3 mb-2 text-gray-700 border-b border-gray-200 pb-1">
-          Visitor Signature
-        </Text>
-        {record.signature && record.signature.length > 0 ? (
-          <SignatureDisplay signaturePaths={record.signature} />
-        ) : (
-          <Text className="text-gray-400 italic mb-5">
-            No signature provided.
-          </Text>
-        )}
-        <Text className="text-xl font-semibold mt-3 mb-2 text-gray-700 border-b border-gray-200 pb-1">
-          Drawing Pages
-        </Text>
-        {record.pages && record.pages.length > 0 ? (
-          record.pages.map((page: any, index: any) => (
-            <View
-              key={page.id}
-              className="mb-5 bg-white rounded-lg shadow-md overflow-hidden border border-gray-100"
-            >
-              <Text className="text-base font-bold p-3 border-b border-gray-100 bg-gray-50">
-                Page {index + 1}
+        <View className="flex flex-row items-center gap-x-16">
+          <Image
+            source={{ uri: record.VisitorId?.profileImgUri || undefined }}
+            className="w-32 h-32 rounded-full bg-gray-200 mb-4"
+            resizeMode="cover"
+          />
+          <View>
+            <Text className="text-2xl text-primary mb-6">
+              {record.VisitorId?.name || "Unknown Visitor"}{" "}
+            </Text>
+            <Text className="text-gray-600 mb-6">
+              {new Date(record.timeStamp).toLocaleString()}
+            </Text>
+          </View>
+        </View>
+
+        {/* Feedback Section */}
+        {record.feedbackText && (
+          <View className="mb-6">
+            <Text className="text-lg font-semibold mb-2 text-gray-800">
+              Feedback
+            </Text>
+            <View className="bg-white p-4 rounded-xl border border-gray-200">
+              <Text className="text-gray-700 leading-relaxed">
+                {record.feedbackText}
               </Text>
-              <View className="w-full" style={{ aspectRatio: 1.414 }}>
-                <DisplayCanvas page={page} />
-              </View>
             </View>
-          ))
-        ) : (
-          <Text className="text-gray-400 italic mb-5">
-            No drawing pages found.
-          </Text>
+          </View>
+        )}
+
+        {/* Audio Section */}
+        {record.audio && (
+          <View className="mb-6">
+            <Text className="text-lg font-semibold mb-2 text-gray-800">
+              Audio Recording
+            </Text>
+            <AudioPlayer uri={record.audio} />
+          </View>
+        )}
+
+        {/* Images Section */}
+        {record.images && record.images.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-lg font-semibold mb-2 text-gray-800">
+              Attached Images
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View className="flex-row gap-3">
+                {record.images.map((uri: string, index: number) => (
+                  <TouchableOpacity
+                    key={index}
+                    activeOpacity={0.8}
+                    // 2. On Press: Set the state to this image URI
+                    onPress={() => setSelectedImage(uri)}
+                    className="h-48 w-48 rounded-xl overflow-hidden bg-gray-200 border border-gray-200"
+                  >
+                    <Image
+                      source={{ uri }}
+                      className="w-full h-full"
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
         )}
         <View className="h-12" />
       </ScrollView>
+
+      {/* 3. Full Screen Image Modal */}
+      <Modal
+        visible={!!selectedImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)} // Android hardware back button
+      >
+        <View className="flex-1 bg-black/95 justify-center items-center relative">
+          {/* Close Button */}
+          <TouchableOpacity
+            onPress={() => setSelectedImage(null)}
+            className="absolute top-12 right-6 z-10 p-2 bg-gray-800/50 rounded-full"
+          >
+            <X color="white" size={28} />
+          </TouchableOpacity>
+
+          {/* The Large Image */}
+          {selectedImage && (
+            <Image
+              source={{ uri: selectedImage }}
+              className="w-full h-full"
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

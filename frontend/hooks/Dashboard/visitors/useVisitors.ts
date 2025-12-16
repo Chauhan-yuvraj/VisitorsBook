@@ -11,8 +11,9 @@ export function useVisitors() {
   const { guest: visitors, loading } = useAppSelector((s) => s.guest);
 
   useEffect(() => {
-    dispatch(fetchGuestsThunk());
-  }, [dispatch]);
+    if (visitors.length === 0)
+      dispatch(fetchGuestsThunk());
+  }, [dispatch, visitors.length]);
 
   const filteredData = useMemo(() => {
     const query = searchQuery.toLowerCase();
@@ -25,7 +26,7 @@ export function useVisitors() {
       const company = item.companyNameFallback?.toLowerCase() || "";
 
       const matchesSearch = name.includes(query) || email.includes(query) || phone.includes(query) || company.includes(query);
-      
+
       let matchesFilter = true;
       if (filterType === 'VIP') {
         matchesFilter = true; // Placeholder if isVip is missing

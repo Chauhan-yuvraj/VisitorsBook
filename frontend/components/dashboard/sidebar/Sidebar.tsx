@@ -8,6 +8,7 @@ import {
   LogOut,
   UserRoundPen,
   Package,
+  FileText,
 } from "lucide-react-native";
 
 // Define the available tabs to avoid typos
@@ -16,6 +17,7 @@ export type TabName =
   | "Employees"
   | "Visitors"
   | "Visits"
+  | "Records"
   | "userForm"
   | "Analytics"
   | "Deliveries";
@@ -100,6 +102,12 @@ const Sidebar = ({ currentTab, onNavigate }: SidebarProps) => {
             label="Visits"
             active={currentTab === "Visits"}
             onPress={() => onNavigate("Visits")}
+          />
+          <SidebarItem
+            icon={FileText}
+            label="Records"
+            active={currentTab === "Records"}
+            onPress={() => onNavigate("Records")}
           />
           <SidebarItem
             icon={Package}
