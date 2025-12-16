@@ -11,9 +11,8 @@ export const useVisits = () => {
     const [endDate, setEndDate] = useState<Date | null>(null);
 
     useEffect(() => {
-        if (visits.length === 0)
-            dispatch(fetchVisitsThunk({}));
-    }, [dispatch, visits.length]);
+        dispatch(fetchVisitsThunk({}));
+    }, [dispatch]);
 
     const filteredVisits = visits.filter((visit) => {
         const query = searchQuery.toLowerCase();
@@ -50,9 +49,11 @@ export const useVisits = () => {
         return matchesSearch && matchesStatus && matchesDate;
     });
 
+    const refetch = () => dispatch(fetchVisitsThunk({}));
+
     return {
         visits: filteredVisits,
-        loading: loading === 'pending',
+        loading,
         error,
         searchQuery,
         setSearchQuery,
@@ -61,6 +62,7 @@ export const useVisits = () => {
         startDate,
         setStartDate,
         endDate,
-        setEndDate
+        setEndDate,
+        refetch,
     };
 };

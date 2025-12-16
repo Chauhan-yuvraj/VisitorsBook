@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   TextInput,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -16,6 +17,7 @@ import { DeliveryCard } from "./DeliveryCard";
 import { Search, Filter, Package } from "lucide-react-native";
 import DeliveryForm from "./DeliveryForm";
 import { DateFilter } from "../DateFilter";
+import { useRefresh } from "@/hooks/useRefresh";
 
 export default function DeliveriesList() {
   const dispatch = useAppDispatch();
@@ -27,9 +29,13 @@ export default function DeliveriesList() {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
 
+  const loadData = useCallback(() => dispatch(fetchDeliveriesThunk()), [dispatch]);
+
   useEffect(() => {
-    if (deliveries.length === 0) dispatch(fetchDeliveriesThunk());
-  }, [dispatch, deliveries.length]);
+    if (deliveries.length === 0) loadData();
+  }, [loadData, deliveries.length]);
+
+  const { refreshing, onRefresh } = useRefresh(async () => loadData());
 
   const handleUpdateStatus = (id: string, status: string) => {
     dispatch(updateDeliveryStatusThunk({ id, status }));
@@ -185,6 +191,7 @@ export default function DeliveriesList() {
         <FlatList
           data={filteredDeliveries}
           keyExtractor={(item) => item._id}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           renderItem={({ item }) => (
             <DeliveryCard item={item} onUpdateStatus={handleUpdateStatus} />
           )}

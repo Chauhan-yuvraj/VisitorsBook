@@ -40,16 +40,6 @@ export function SelectionList<T>({ data, onSelect, onClose, title, renderItem, s
                     onChangeText={setSearchQuery}
                 />
             </View>
-
-            {onAddNew && (
-                <TouchableOpacity 
-                    onPress={onAddNew}
-                    className="mb-4 bg-primary/10 p-3 rounded-xl flex-row items-center justify-center"
-                >
-                    <Text className="text-primary font-semibold">+ Add New</Text>
-                </TouchableOpacity>
-            )}
-
             <FlatList
                 data={filteredData}
                 keyExtractor={(item: any) => item._id || item.id || Math.random().toString()}

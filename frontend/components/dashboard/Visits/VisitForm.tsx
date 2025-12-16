@@ -193,7 +193,15 @@ export default function VisitForm({ initialData, onSubmit, onCancel, isUpdating 
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Visitor Selection */}
                 <View className="mb-4">
-                    <Text className="text-sm font-medium text-gray-700 mb-1">Visitor</Text>
+                    <View className="flex-row justify-between items-center mb-1">
+                        <Text className="text-sm font-medium text-gray-700">Visitor</Text>
+                        {!isUpdating && (
+                            <TouchableOpacity onPress={() => setIsCreatingVisitor(true)} className="flex-row items-center">
+                                <Text className="text-primary text-xs font-bold mr-1">Add New</Text>
+                                <User size={12} color="#4F46E5" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
                     <TouchableOpacity
                         onPress={() => !isUpdating && setSelectingVisitor(true)}
                         className={`w-full px-4 py-3 border border-gray-300 rounded-lg flex-row justify-between items-center ${isUpdating ? 'bg-gray-50' : 'bg-white'}`}
@@ -343,6 +351,20 @@ export default function VisitForm({ initialData, onSubmit, onCancel, isUpdating 
                     </Text>
                 </TouchableOpacity>
             </ScrollView>
+
+            {/* Visitor Creation Modal (Accessible from main view) */}
+            <Modal
+                visible={isCreatingVisitor}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setIsCreatingVisitor(false)}
+            >
+                <VisitorForm
+                    visible={isCreatingVisitor}
+                    onClose={() => setIsCreatingVisitor(false)}
+                    onSubmit={handleCreateVisitor}
+                />
+            </Modal>
         </View>
     );
 }

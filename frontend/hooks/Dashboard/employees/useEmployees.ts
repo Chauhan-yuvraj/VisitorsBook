@@ -31,6 +31,8 @@ export function useEmployees() {
     });
   }, [employees, searchQuery, filterRole]);
 
+  const refetch = () => dispatch(fetchEmployeesThunk());
+
   return {
     searchQuery,
     setSearchQuery,
@@ -38,5 +40,6 @@ export function useEmployees() {
     setFilterRole,
     employees: filteredData,
     loading,
+    refetch,
   };
 }

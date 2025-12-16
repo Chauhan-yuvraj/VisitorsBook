@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  RefreshControl,
   Text,
   TextInput,
   TouchableOpacity,
@@ -15,9 +16,11 @@ import { useEmployeeActions } from "@/hooks/Dashboard/employees/useEmployeeActio
 import { Employee , UserRole } from "@/store/types/user";
 import { EmployeeCard } from "./EmployeeCard";
 import EmployeeForm from "./EmployeeForm";
+import { useRefresh } from "@/hooks/useRefresh";
 
 export default function EmployeesList() {
-  const { searchQuery, setSearchQuery, employees, loading, filterRole, setFilterRole } = useEmployees();
+  const { searchQuery, setSearchQuery, employees, loading, filterRole, setFilterRole, refetch } = useEmployees();
+  const { refreshing, onRefresh } = useRefresh(refetch);
 
   // Local state to manage modal visibility and selected employee
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -128,6 +131,7 @@ export default function EmployeesList() {
         <FlatList
           data={employees}
           keyExtractor={(item) => item._id}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           renderItem={({ item }) => (
             <EmployeeCard
               item={item}

@@ -21,13 +21,13 @@ import { useVisitActions } from "@/hooks/Dashboard/visits/useVisitActions";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchVisitsThunk } from "@/store/slices/visit.slice";
 import { fetchDeliveriesThunk } from "@/store/slices/delivery.slice";
+import { useRefresh } from "@/hooks/useRefresh";
 
 export default function MainDashBoard() {
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const [isCheckInVisible, setIsCheckInVisible] = useState(false);
   const [isDeliveryVisible, setIsDeliveryVisible] = useState(false);
-  const [refreshing, setRefreshing] = useState(false); // Local loading state
 
   const { handleCreate } = useVisitActions(() => setIsCheckInVisible(false));
 
@@ -46,12 +46,7 @@ export default function MainDashBoard() {
     loadData();
   }, [loadData]);
 
-  // handle Pull to refresh
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  }, [loadData]);
+  const { refreshing, onRefresh } = useRefresh(loadData);
 
   const dashboardStats = useMemo(() => {
     const checkedIn = visits.filter((v) => v.status === "CHECKED_IN").length;
@@ -198,8 +193,7 @@ export default function MainDashBoard() {
           <View className="flex-1 gap-6">
             <UpcomingTimeline visits={visits} />
 
-            {/* Gradient Analytics Widget */}
-            <View className="bg-indigo-600 rounded-3xl p-6 shadow-lg overflow-hidden relative">
+            {/* <View className="bg-indigo-600 rounded-3xl p-6 shadow-lg overflow-hidden relative">
               <View className="absolute -top-10 -right-10 h-32 w-32 bg-white opacity-10 rounded-full" />
 
               <Text className="text-indigo-100 text-xs font-medium mb-1">
@@ -212,20 +206,22 @@ export default function MainDashBoard() {
               <Text className="text-xs text-indigo-200 leading-5">
                 Expect a surge in visitors after lunch based on historical data.
               </Text>
-            </View>
+            </View> */}
           </View>
         </View>
       </ScrollView>
 
       <Modal visible={isCheckInVisible} animationType="slide" transparent>
-        <VisitForm
-          onCancel={() => setIsCheckInVisible(false)}
-          onSubmit={async (data) => {
-            await handleCreate(data);
-            setIsCheckInVisible(false);
-          }}
-          initialData={{ isWalkIn: true } as any}
-        />
+        <View className="flex-1 bg-black/50 justify-center items-center p-4">
+          <VisitForm
+            onCancel={() => setIsCheckInVisible(false)}
+            onSubmit={async (data) => {
+              await handleCreate(data);
+              setIsCheckInVisible(false);
+            }}
+            initialData={{ isWalkIn: true } as any}
+          />
+        </View>
       </Modal>
 
       <DeliveryForm

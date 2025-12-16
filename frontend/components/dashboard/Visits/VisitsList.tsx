@@ -7,6 +7,7 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  RefreshControl,
 } from "react-native";
 import { useVisits } from "@/hooks/Dashboard/visits/useVisits";
 import { useVisitActions } from "@/hooks/Dashboard/visits/useVisitActions";
@@ -15,6 +16,7 @@ import VisitForm from "./VisitForm";
 import { Plus, Search, Filter } from "lucide-react-native";
 import { Visit } from "@/store/types/visit";
 import { DateFilter } from "../DateFilter";
+import { useRefresh } from "@/hooks/useRefresh";
 
 const STATUS_FILTERS = [
   "PENDING",
@@ -35,8 +37,10 @@ export default function VisitsList() {
     startDate,
     setStartDate,
     endDate,
-    setEndDate
+    setEndDate,
+    refetch,
   } = useVisits();
+  const { refreshing, onRefresh } = useRefresh(refetch);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
@@ -155,7 +159,7 @@ export default function VisitsList() {
       </View>
 
       {/* List */}
-      {loading ? (
+      {loading === 'pending' && visits.length === 0 ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#4F46E5" />
         </View>
@@ -163,6 +167,7 @@ export default function VisitsList() {
         <FlatList
           data={visits}
           keyExtractor={(item) => item._id}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           renderItem={({ item }) => (
             <VisitCard
               visit={item}

@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
   FlatList,
   ActivityIndicator,
   TextInput,
+  RefreshControl,
 } from "react-native";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { getRecords } from "@/store/slices/records.slice";
@@ -13,6 +14,7 @@ import { FeedbackRecord } from "@/store/types/feedback";
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
 import { DateFilter } from "../DateFilter";
+import { useRefresh } from "@/hooks/useRefresh";
 
 export default function RecordsList() {
   const dispatch = useAppDispatch();
@@ -22,9 +24,13 @@ export default function RecordsList() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
 
+  const loadData = useCallback(() => dispatch(getRecords()), [dispatch]);
+
   useEffect(() => {
-    dispatch(getRecords());
-  }, [dispatch]);
+    loadData();
+  }, [loadData]);
+
+  const { refreshing, onRefresh } = useRefresh(async () => loadData());
 
   const filteredRecords = records.filter((record) => {
     const matchesSearch = record.VisitorId?.name?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -112,6 +118,7 @@ export default function RecordsList() {
       <FlatList
         data={filteredRecords}
         keyExtractor={(item) => item._id || Math.random().toString()}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }) => (
           <RecordCard record={item} onPress={handlePress} />
         )}

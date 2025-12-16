@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Platform } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Calendar, X } from 'lucide-react-native';
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Calendar, X } from "lucide-react-native";
 
 interface DateFilterProps {
   startDate: Date | null;
@@ -9,7 +9,11 @@ interface DateFilterProps {
   onFilterChange: (start: Date | null, end: Date | null) => void;
 }
 
-export const DateFilter = ({ startDate, endDate, onFilterChange }: DateFilterProps) => {
+export const DateFilter = ({
+  startDate,
+  endDate,
+  onFilterChange,
+}: DateFilterProps) => {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
@@ -44,11 +48,15 @@ export const DateFilter = ({ startDate, endDate, onFilterChange }: DateFilterPro
     <View className="flex-row items-center gap-2 mb-4 flex-wrap">
       <TouchableOpacity
         onPress={() => setShowStartPicker(true)}
-        className={`flex-row items-center px-3 py-2 rounded-lg border ${startDate ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`}
+        className={`flex-row items-center px-3 py-2 rounded-lg border ${
+          startDate ? "bg-blue-50 border-blue-200" : "bg-white border-gray-200"
+        }`}
       >
-        <Calendar size={16} color={startDate ? '#2563eb' : '#6b7280'} />
-        <Text className={`ml-2 ${startDate ? 'text-blue-700' : 'text-gray-500'}`}>
-          {startDate ? formatDate(startDate) : 'Start Date'}
+        <Calendar size={16} color={startDate ? "#2563eb" : "#6b7280"} />
+        <Text
+          className={`ml-2 ${startDate ? "text-blue-700" : "text-gray-500"}`}
+        >
+          {startDate ? formatDate(startDate) : "Start Date"}
         </Text>
       </TouchableOpacity>
 
@@ -57,18 +65,27 @@ export const DateFilter = ({ startDate, endDate, onFilterChange }: DateFilterPro
           <Text className="text-gray-400">-</Text>
           <TouchableOpacity
             onPress={() => setShowEndPicker(true)}
-            className={`flex-row items-center px-3 py-2 rounded-lg border ${endDate ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`}
+            className={`flex-row items-center px-3 py-2 rounded-lg border ${
+              endDate
+                ? "bg-blue-50 border-blue-200"
+                : "bg-white border-gray-200"
+            }`}
           >
-            <Calendar size={16} color={endDate ? '#2563eb' : '#6b7280'} />
-            <Text className={`ml-2 ${endDate ? 'text-blue-700' : 'text-gray-500'}`}>
-              {endDate ? formatDate(endDate) : 'End Date'}
+            <Calendar size={16} color={endDate ? "#2563eb" : "#6b7280"} />
+            <Text
+              className={`ml-2 ${endDate ? "text-blue-700" : "text-gray-500"}`}
+            >
+              {endDate ? formatDate(endDate) : "End Date"}
             </Text>
           </TouchableOpacity>
         </>
       )}
 
       {(startDate || endDate) && (
-        <TouchableOpacity onPress={clearFilter} className="p-2 bg-red-50 rounded-full ml-2">
+        <TouchableOpacity
+          onPress={clearFilter}
+          className="p-2 bg-red-50 rounded-full ml-2"
+        >
           <X size={16} color="#ef4444" />
         </TouchableOpacity>
       )}
