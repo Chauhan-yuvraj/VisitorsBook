@@ -32,6 +32,8 @@ const deliverySchema = new Schema(
     // --- TIMESTAMPS ---
     // createdAt = When it arrived at the desk
     collectedAt: { type: Date }, // When employee picked it up
+
+    isDeleted: { type: Boolean, default: false },
   },
   {
     timestamps: true

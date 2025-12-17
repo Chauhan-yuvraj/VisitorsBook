@@ -9,14 +9,14 @@ import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      console.log("Attempting to prefetch login page...");
-      router.replace("/(admin)/Dashboard");
-    }, 100); // Wait r
+  // useEffect(() => {
+  //   const timeout = setTimeout(() => {
+  //     console.log("Attempting to prefetch login page...");
+  //     router.replace("/(admin)/Dashboard");
+  //   }, 100); // Wait r
 
-    return () => clearTimeout(timeout);
-  }, []);
+  //   return () => clearTimeout(timeout);
+  // }, []);
 
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
