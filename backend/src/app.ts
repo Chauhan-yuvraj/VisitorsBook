@@ -12,14 +12,32 @@ import cookieParser from "cookie-parser";
 const app = express();
 app.use(cookieParser());
 
+const allowedOrigins = [
+    'http://localhost:5173',        // web (Vite)
+    'http://localhost:19006',       // Expo dev
+    'exp://localhost:19000',        // Expo Go
+    'http://10.0.2.2:3000',         // Android emulator
+    'http://localhost:3000'         // optional
+];
+
 app.use(cors({
-    origin: '*', // Allow all origins in development
+    origin: (origin, callback) => {
+        // allow mobile apps with no origin header
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
-app.use('/api/auth' , authRoutes)
+app.use('/api/auth', authRoutes)
 
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/visits", visitRoutes);
