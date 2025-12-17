@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { Store, ActionCreatorWithPayload, ActionCreatorWithoutPayload } from "@reduxjs/toolkit";
 
 const API_URL = "http://localhost:3000/api"; // Adjust if needed
 
@@ -23,7 +24,16 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 }
 
-export const setupInterceptors = (store: any, { logout, refreshSuccess }: any) => {
+export const setupInterceptors = (
+  store: Store<{ auth: { token: string | null } }>,
+  {
+    logout,
+    refreshSuccess,
+  }: {
+    logout: ActionCreatorWithoutPayload;
+    refreshSuccess: ActionCreatorWithPayload<string>;
+  }
+) => {
   /* ---------------- Request interceptor ---------------- */
   API.interceptors.request.use(
     (config) => {

@@ -1,36 +1,30 @@
 import { useEffect, useState } from "react";
 import { LayoutGrid, List, Search, Plus, User } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { getEmployees } from "@/services/employees.service";
-import type { Employee } from "@/types/user";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchEmployees } from "@/store/slices/employeeSlice";
+import AddEmployeeModal from "./AddEmployeeModal";
 
 export default function Employees() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { employees, isLoading: loading } = useAppSelector(
+    (state) => state.employees
+  );
+
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
-    try {
-      setLoading(true);
-      const data = await getEmployees();
-      setEmployees(data);
-    } catch (error) {
-      console.error("Error fetching employees:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (employees.length === 0) dispatch(fetchEmployees());
+  }, [dispatch, employees.length]);
 
   const filteredEmployees = employees.filter(
     (employee) =>
-      employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      employee.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      employee.department?.toLowerCase().includes(searchQuery.toLowerCase())
+      employee &&
+      (employee.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        employee.jobTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        employee.department?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -42,11 +36,16 @@ export default function Employees() {
             Manage your team members and their roles.
           </p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setIsAddModalOpen(true)}>
           <Plus className="h-4 w-4" />
           Add Employee
         </Button>
       </div>
+
+      <AddEmployeeModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+      />
 
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="relative w-full sm:w-96">
