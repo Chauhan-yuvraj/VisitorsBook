@@ -10,5 +10,6 @@
   },
   "exports": {
     ".": "./dist/index.js"
-  }
+  },
+  "packageManager": "pnpm@9.15.1"
 }
