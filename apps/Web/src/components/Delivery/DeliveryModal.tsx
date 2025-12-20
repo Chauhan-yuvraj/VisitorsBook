@@ -74,7 +74,7 @@ export default function DeliveryModal({ isOpen, onClose }: DeliveryModalProps) {
             </SelectTrigger>
             <SelectContent>
               {employees.map((emp) => (
-                <SelectItem key={emp._id} value={emp._id}>
+                <SelectItem key={emp._id} value={emp._id || ""}>
                   {emp.name}
                 </SelectItem>
               ))}

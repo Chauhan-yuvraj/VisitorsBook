@@ -162,7 +162,7 @@ export default function VisitModal({
                 </SelectTrigger>
                 <SelectContent>
                   {employees.map((employee) => (
-                    <SelectItem key={employee._id} value={employee._id}>
+                    <SelectItem key={employee._id} value={employee._id || ""}>
                       {employee.name} - {employee.department}
                     </SelectItem>
                   ))}

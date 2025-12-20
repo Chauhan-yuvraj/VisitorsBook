@@ -22,7 +22,7 @@ export default function EmployeeProfileModal({
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this employee?")) {
-      onDelete(employee._id);
+      onDelete(employee._id || "");
       onClose();
     }
   };

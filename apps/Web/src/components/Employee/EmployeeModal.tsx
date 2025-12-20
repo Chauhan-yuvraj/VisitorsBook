@@ -94,7 +94,7 @@ export default function EmployeeModal({
 
       if (employeeToEdit) {
         await dispatch(
-          updateEmployee({ id: employeeToEdit._id, data: submitData })
+          updateEmployee({ id: employeeToEdit._id || "", data: submitData })
         ).unwrap();
       } else {
         await dispatch(addEmployee(submitData)).unwrap();
