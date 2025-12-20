@@ -13,9 +13,6 @@
     "skipLibCheck": true,              // Skips type checking of declaration files (speeds up build)
     "forceConsistentCasingInFileNames": true, // Prevents errors on case-sensitive file systems (Linux/Mac)
     "baseUrl": ".",
-    "paths": {
-      "@repo/types": ["../../packages/types/src"]
-    },
     
     /* CRITICAL FOR REQ.USER */
     // This allows TS to look in your custom types folder as well as node_modules
