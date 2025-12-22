@@ -18,8 +18,6 @@ export default function DashboardContent({
       return <MainDashBoard />;
 
     case "Employees":
-      // We don't need to pass navigate for the form anymore,
-      // the form will be handled internally by this component.
       return <EmployeesList />;
 
     case "Visitors":

@@ -1,15 +1,25 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sidebarItems } from "@/constants/dashboard/navigation";
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { logoutUser } from "@/store/slices/authSlice";
 import { useEffect } from "react";
 
 export function Sidebar() {
   const { role } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
+    navigate("/");
+  };
+
   useEffect(() => {
     console.log("User role in Sidebar:", role);
   }, [role]);
+
   return (
     <div className="w-64 bg-background border-r border-border flex flex-col h-screen sticky top-0">
       <div className="p-6 flex flex-col items-center gap-2">
@@ -49,7 +59,10 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-border">
-        <button className="flex items-center gap-3 px-3 py-2 w-full rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2 w-full rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+        >
           <LogOut className="h-4 w-4" />
           Logout
         </button>

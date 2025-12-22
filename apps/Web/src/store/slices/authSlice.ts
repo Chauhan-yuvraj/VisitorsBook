@@ -87,6 +87,17 @@ export const fetchCurrentUser = createAsyncThunk(
     }
 );
 
+export const logoutUser = createAsyncThunk(
+    'auth/logout',
+    async () => {
+        try {
+            await authService.logout();
+        } catch (error: unknown) {
+            console.error("Logout failed", error);
+        }
+    }
+);
+
 const authSlice = createSlice({
     name: 'auth',
     initialState,
@@ -133,7 +144,7 @@ const authSlice = createSlice({
                 state.isAuthenticated = true;
                 state.user = action.payload.user;
                 state.token = action.payload.accessToken;
-                
+
                 // Persist to localStorage
                 localStorage.setItem('token', action.payload.accessToken);
                 localStorage.setItem('user', JSON.stringify(action.payload.user));
@@ -178,6 +189,17 @@ const authSlice = createSlice({
                 state.token = null;
                 state.permissions = [];
                 state.role = null;
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            })
+            .addCase(logoutUser.fulfilled, (state) => {
+                state.user = null;
+                state.token = null;
+                state.permissions = [];
+                state.role = null;
+                state.isAuthenticated = false;
+                state.isLoading = false;
+                state.error = null;
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
             });

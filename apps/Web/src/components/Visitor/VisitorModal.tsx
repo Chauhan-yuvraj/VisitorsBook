@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { useAppDispatch } from "@/store/hooks";
-import { addVisitor, updateVisitor } from "@/store/slices/visitorSlice";
+import React from "react";
 import Modal from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Textarea } from "@/components/ui/Textarea";
 import type { Visitor } from "@/types/visitor";
+import { useVisitorForm } from "@/hooks/useVisitorForm";
 
 interface VisitorModalProps {
   isOpen: boolean;
@@ -16,94 +18,15 @@ export default function VisitorModal({
   onClose,
   visitorToEdit,
 }: VisitorModalProps) {
-  const dispatch = useAppDispatch();
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    companyNameFallback: "",
-    notes: "",
-    isVip: false,
-    isBlocked: false,
-  });
-
-  useEffect(() => {
-    if (visitorToEdit) {
-      setFormData({
-        name: visitorToEdit.name || "",
-        email: visitorToEdit.email || "",
-        phone: visitorToEdit.phone || "",
-        companyNameFallback: visitorToEdit.companyNameFallback || "",
-        notes: visitorToEdit.notes || "",
-        isVip: visitorToEdit.isVip || false,
-        isBlocked: visitorToEdit.isBlocked || false,
-      });
-    } else {
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        companyNameFallback: "",
-        notes: "",
-        isVip: false,
-        isBlocked: false,
-      });
-    }
-    setSelectedFile(null);
-  }, [visitorToEdit, isOpen]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: checked }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      const submitData = new FormData();
-      submitData.append("name", formData.name);
-      submitData.append("email", formData.email);
-      submitData.append("phone", formData.phone);
-      submitData.append("companyNameFallback", formData.companyNameFallback);
-      submitData.append("notes", formData.notes);
-      submitData.append("isVip", String(formData.isVip));
-      submitData.append("isBlocked", String(formData.isBlocked));
-
-      if (selectedFile) {
-        submitData.append("profileImg", selectedFile);
-      }
-
-      if (visitorToEdit) {
-        await dispatch(
-          updateVisitor({ id: visitorToEdit._id, data: submitData })
-        ).unwrap();
-      } else {
-        await dispatch(addVisitor(submitData)).unwrap();
-      }
-
-      onClose();
-    } catch (error) {
-      console.error("Failed to save visitor:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    formData,
+    isLoading,
+    selectedFile,
+    handleChange,
+    handleCheckboxChange,
+    handleFileChange,
+    handleSubmit,
+  } = useVisitorForm({ visitorToEdit, onClose, isOpen });
 
   return (
     <Modal
@@ -130,66 +53,61 @@ export default function VisitorModal({
               <span className="text-muted-foreground text-xs">No Image</span>
             )}
           </div>
-          <input
+          <Input
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            className="text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+            className="w-full max-w-xs"
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Name</label>
-            <input
+            <Label>Name</Label>
+            <Input
               name="name"
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               placeholder="John Doe"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
-            <input
+            <Label>Email</Label>
+            <Input
               name="email"
               type="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               placeholder="john@example.com"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Phone</label>
-            <input
+            <Label>Phone</Label>
+            <Input
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               placeholder="+1 234 567 890"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Company</label>
-            <input
+            <Label>Company</Label>
+            <Input
               name="companyNameFallback"
               value={formData.companyNameFallback}
               onChange={handleChange}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               placeholder="Company Name"
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Notes</label>
-          <textarea
+          <Label>Notes</Label>
+          <Textarea
             name="notes"
             value={formData.notes}
             onChange={handleChange}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-20"
             placeholder="Additional notes..."
           />
         </div>

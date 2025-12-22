@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Admin } from "../types/user";
-import { loginAdmin } from "@/services/auth.service";
+import { loginAdmin, logoutUser } from "@/services/auth.service";
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 import Constants from "expo-constants";
@@ -51,6 +51,10 @@ const logout = createAsyncThunk(
     "auth/logout",
     async () => {
         try {
+            const refreshToken = await SecureStore.getItemAsync("refreshToken");
+            if (refreshToken) {
+                await logoutUser(refreshToken);
+            }
             // Remove refresh token from SecureStore
             await SecureStore.deleteItemAsync("refreshToken");
             console.log("✅ Refresh token removed from SecureStore");

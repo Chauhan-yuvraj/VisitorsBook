@@ -27,7 +27,7 @@ export default function Deliveries() {
     confirmDelete,
     isDeleteAlertOpen,
     setIsDeleteAlertOpen,
-  } = useDeliveries();
+  } = useDeliveries();  
 
   return (
     <div className="space-y-6">

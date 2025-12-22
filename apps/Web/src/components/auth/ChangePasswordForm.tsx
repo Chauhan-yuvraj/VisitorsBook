@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { updatePassword } from "@/services/auth.service";
 import { logout } from "@/store/slices/authSlice";
-import { Input } from "../ui/Input";
 import { PasswordInput } from "../ui/PasswordInput";
 import { Label } from "../ui/Label";
 import {
@@ -56,7 +55,7 @@ export function ChangePasswordForm() {
     }
   };
 
-  const handleSuccessClose = () => {
+  const handleSuccessClose = async () => {
     dispatch(logout());
     navigate("/login");
   };

@@ -115,3 +115,47 @@ export const RefreshAccessToken = async (req: Request, res: Response): Promise<v
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+
+export const Logout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const cookies = req.cookies;
+    let refreshToken = cookies?.jwt;
+
+    // Mobile FallBack
+    if (!refreshToken && req.body.refreshToken) {
+      refreshToken = req.body.refreshToken;
+    }
+
+    if (!refreshToken) {
+      res.sendStatus(204); // No content
+      return;
+    }
+
+    // Is refreshToken in db?
+    const user = await Employee.findOne({ refreshToken }).exec();
+    if (!user) {
+      res.clearCookie('jwt', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict"
+      });
+      res.sendStatus(204);
+      return;
+    }
+
+    // Delete refreshToken in db
+    user.refreshToken = ""; 
+    await user.save();
+
+    res.clearCookie('jwt', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict"
+    });
+    res.status(200).json({ success: true, message: "Logged out successfully" });
+
+  } catch (err: any) {
+    console.error("Logout Error:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

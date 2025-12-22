@@ -4,12 +4,15 @@ import {
   LayoutGrid,
   Users,
   Send,
-  PieChart,
   LogOut,
   UserRoundPen,
   Package,
   FileText,
 } from "lucide-react-native";
+import { useAppDispatch } from "@/store/hooks";
+import { logout } from "@/store/slices/auth.slice";
+import { navigate } from "expo-router/build/global-state/routing";
+import { router } from "expo-router";
 
 // Define the available tabs to avoid typos
 export type TabName =
@@ -61,6 +64,20 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ currentTab, onNavigate }: SidebarProps) => {
+  const dispatch = useAppDispatch();
+  const handleLogout = () => {
+    // if logout is scuccessful, clear user state & redirect to login
+
+    dispatch(logout())
+      .unwrap()
+      .then(() => {
+        router.replace("/(auth)/loginPage")
+      })
+      .catch((error) => {
+        console.error("Logout failed:", error);
+      });
+  };
+
   return (
     <View className="w-64 bg-surface border-r border-gray-100 flex-col justify-between pt-8 pb-8 hidden md:flex h-full">
       <View>
@@ -121,11 +138,7 @@ const Sidebar = ({ currentTab, onNavigate }: SidebarProps) => {
       {/* Footer */}
       <View className="px-4">
         {/* Logic for Logout usually doesn't change tabs, but calls an auth function */}
-        <SidebarItem
-          icon={LogOut}
-          label="Log Out"
-          onPress={() => console.log("Logout")}
-        />
+        <SidebarItem icon={LogOut} label="Log Out" onPress={handleLogout} />
       </View>
     </View>
   );
