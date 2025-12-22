@@ -2,19 +2,19 @@ import { useAppSelector } from "@/store/hooks"
 
 export const usePermission = () => {
 
-    const { permissions, user, isAuthenticated } = useAppSelector((state) => state.auth);
+    const { permissions, user, isAuthenticated, role } = useAppSelector((state) => state.auth);
 
     const hasPermission = (requiredPermission: string): boolean => {
 
-        if (!isAuthenticated || !user || !permissions) {
+        if (!isAuthenticated) {
             return false;
         }
 
-        if (permissions.includes('all')) {
+        if (role === 'all' || (permissions && permissions.includes('all'))) {
             return true;
         }
 
-        return permissions.includes(requiredPermission);
+        return permissions ? permissions.includes(requiredPermission) : false;
     };
     return { hasPermission, user, isAuthenticated, };
 };

@@ -3,9 +3,13 @@ import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sidebarItems } from "@/constants/dashboard/navigation";
 import { useAppSelector } from "@/store/hooks";
+import { useEffect } from "react";
 
 export function Sidebar() {
-  const { user } = useAppSelector((state) => state.auth);
+  const { role } = useAppSelector((state) => state.auth);
+  useEffect(() => {
+    console.log("User role in Sidebar:", role);
+  }, [role]);
   return (
     <div className="w-64 bg-background border-r border-border flex flex-col h-screen sticky top-0">
       <div className="p-6 flex flex-col items-center gap-2">
@@ -18,7 +22,12 @@ export function Sidebar() {
 
       <nav className="flex-1 px-4 space-y-1">
         {sidebarItems
-          .filter((item) => user?.role && (item.roles as readonly string[]).includes(user.role))
+          .filter(
+            (item) =>
+              role &&
+              (role === "all" ||
+                (item.roles as readonly string[]).includes(role))
+          )
           .map((item) => (
             <NavLink
               key={item.href}
