@@ -32,12 +32,6 @@ export function Sidebar() {
 
       <nav className="flex-1 px-4 space-y-1">
         {sidebarItems
-          .filter(
-            (item) =>
-              role &&
-              (role === "all" ||
-                (item.roles as readonly string[]).includes(role))
-          )
           .map((item) => (
             <NavLink
               key={item.href}

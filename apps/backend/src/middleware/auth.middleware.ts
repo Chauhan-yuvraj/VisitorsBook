@@ -34,15 +34,12 @@ export const protect = async (req: Request, res: Response, next: Function) => {
 
         req.user = user;
         next();
+
     } catch (error) {
         console.error("JWT Error:", error);
         return res.status(401).json({ message: "Not authorized, token failed" });
     }
 };
-
-
-
-
 
 export const checkPermission = (...requiredPermission: string[]) => {
     return (req: Request, res: Response, next: Function) => {

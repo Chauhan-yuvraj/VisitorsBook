@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Delivery } from "../models/delivery.model";
+import { UserRole } from "@repo/types";
 
 export const createDelivery = async (req: Request, res: Response) => {
   try {
@@ -14,9 +15,9 @@ export const createDelivery = async (req: Request, res: Response) => {
     });
 
     await newDelivery.save();
-    
+
     const populatedDelivery = await newDelivery.populate("recipientId", "name email profileImgUri");
-    
+
     res.status(201).json(populatedDelivery);
   } catch (error) {
     res.status(500).json({ message: "Error creating delivery", error });
@@ -25,7 +26,18 @@ export const createDelivery = async (req: Request, res: Response) => {
 
 export const getDeliveries = async (req: Request, res: Response) => {
   try {
-    const deliveries = await Delivery.find({ isDeleted: { $ne: true } })
+    const user = req.user
+    if (!user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    let filter: any = { isDeleted: { $ne: true } };
+
+    if (user.role === UserRole.EMPLOYEE) {
+      filter.recipientId = user._id;
+    }
+
+    const deliveries = await Delivery.find(filter)
       .populate("recipientId", "name email profileImgUri")
       .sort({ createdAt: -1 });
     res.status(200).json(deliveries);
