@@ -34,7 +34,9 @@ export default function DeliveryModal({ isOpen, onClose }: DeliveryModalProps) {
     }
   }, [isOpen, dispatch, employees.length]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -105,7 +107,9 @@ export default function DeliveryModal({ isOpen, onClose }: DeliveryModalProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Tracking Number</label>
+          <label className="block text-sm font-medium mb-1">
+            Tracking Number
+          </label>
           <input
             type="text"
             name="trackingNumber"

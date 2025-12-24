@@ -15,6 +15,7 @@ export const ROLE_PERMISSIONS = {
         'view_self_visits',
         'view_self_records',
         'view_self_deliveries',
+        'manage_self_deliveries',
         'view_active_employees'
     ],
     [UserRole.EXECUTIVE]: [

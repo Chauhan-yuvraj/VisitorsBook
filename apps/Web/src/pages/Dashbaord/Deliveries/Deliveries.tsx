@@ -37,7 +37,7 @@ export default function Deliveries() {
         actionLabel="Add Delivery" 
         onAction={() => setIsModalOpen(true)} 
       />
-
+        
       <DeliveryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>

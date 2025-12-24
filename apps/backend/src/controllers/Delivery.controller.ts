@@ -6,8 +6,20 @@ export const createDelivery = async (req: Request, res: Response) => {
   try {
     const { recipientId, carrier, trackingNumber, labelPhotoUrl } = req.body;
 
+    const user = req.user
+
+    if (!user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    let targetRecipientId = recipientId;
+
+    if (user.role === UserRole.EMPLOYEE) {
+      targetRecipientId = user._id;
+    }
+
     const newDelivery = new Delivery({
-      recipientId,
+      recipientId: targetRecipientId,
       carrier,
       trackingNumber,
       labelPhotoUrl,
@@ -50,14 +62,24 @@ export const updateDeliveryStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
 
     const updateData: any = { status };
     if (status === "COLLECTED") {
       updateData.collectedAt = new Date();
     }
 
-    const updatedDelivery = await Delivery.findByIdAndUpdate(
-      id,
+    const query: any = { _id: id };
+    if (user.role === UserRole.EMPLOYEE) {
+      query.recipientId = user._id;
+    }
+
+    const updatedDelivery = await Delivery.findOneAndUpdate(
+      query,
       updateData,
       { new: true }
     ).populate("recipientId", "name email profileImgUri");
@@ -75,8 +97,19 @@ export const updateDeliveryStatus = async (req: Request, res: Response) => {
 export const deleteDelivery = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const deletedDelivery = await Delivery.findByIdAndUpdate(
-      id,
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const query: any = { _id: id };
+    if (user.role === UserRole.EMPLOYEE) {
+      query.recipientId = user._id;
+    }
+
+    const deletedDelivery = await Delivery.findOneAndUpdate(
+      query,
       { isDeleted: true },
       { new: true }
     );
