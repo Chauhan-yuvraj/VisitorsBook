@@ -10,6 +10,7 @@ import Visitors from "./pages/Dashbaord/Visitors/Visitors";
 import Visits from "./pages/Dashbaord/Visits/Visits";
 import Records from "./pages/Dashbaord/Records/Records";
 import Deliveries from "./pages/Dashbaord/Deliveries/Deliveries";
+import Departments from "./pages/Dashbaord/Departments/Departments";
 import DashboardLayout from "./components/layout/DashboardLayout";
 
 export const router = createBrowserRouter([
@@ -48,6 +49,10 @@ export const router = createBrowserRouter([
           {
             path: "deliveries",
             element: <Deliveries />,
+          },
+          {
+            path: "departments",
+            element: <Departments />,
           },
         ],
       },

@@ -8,7 +8,8 @@ export const ROLE_PERMISSIONS = {
         'manage_visitors',
         'manage_deliveries',
         'view_reports',
-        'manage_visits'
+        'manage_visits',
+        'manage_departments'
     ],
     [UserRole.EMPLOYEE]: [
         'view_self_data',
@@ -23,6 +24,7 @@ export const ROLE_PERMISSIONS = {
         'manage_visitors',
         'manage_deliveries',
         'manage_reports',
-        'manage_visits'
+        'manage_visits',
+        'manage_departments'
     ],
 };

@@ -6,6 +6,7 @@ import {
   UserRoundPen,
   Package,
   FileText,
+  Building2,
 } from "lucide-react";
 import { UserRole } from "@/types/user";
 import type { LucideIcon } from "lucide-react";
@@ -25,4 +26,5 @@ export const sidebarItems: SidebarItem[] = [
   { icon: Send, label: "Visits", href: "/dashboard/visits", roles: [UserRole.ADMIN, UserRole.HR, UserRole.EXECUTIVE, UserRole.EMPLOYEE] },
   { icon: FileText, label: "Records", href: "/dashboard/records", roles: [UserRole.ADMIN, UserRole.HR, UserRole.EXECUTIVE, UserRole.EMPLOYEE] },
   { icon: Package, label: "Deliveries", href: "/dashboard/deliveries", roles: [UserRole.ADMIN, UserRole.HR, UserRole.EXECUTIVE, UserRole.EMPLOYEE] },
+  { icon: Building2, label: "Departments", href: "/dashboard/departments", roles: [UserRole.ADMIN, UserRole.HR, UserRole.EXECUTIVE, UserRole.EMPLOYEE] },
 ] as const;

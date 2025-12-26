@@ -29,7 +29,6 @@ export interface IEmployee {
 }
 export type RoleFilter = UserRole | "all";
 
-
 export interface ActiveEmployeeOption {
   _id: string;
   name: string;

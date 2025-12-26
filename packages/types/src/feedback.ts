@@ -22,7 +22,6 @@ export interface UserRecord {
 export interface FeedbackRecord {
     _id?: string;
     id?: string;
-    // Mobile style
     VisitorId?: {
         _id: string;
         name: string;
@@ -31,7 +30,6 @@ export interface FeedbackRecord {
         company: string;
         profileImgUri?: string;
     };
-    // Backend style
     guest?: UserRecord;
     
     pages: SerializableCanvasPage[];
