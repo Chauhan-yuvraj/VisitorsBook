@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Clock, CheckCircle, XCircle, Edit3, Save, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "./Button";
-import Modal from "./Modal";
-import { Input } from "./Input";
+import React from "react";
+import { Clock, CheckCircle, XCircle } from "lucide-react";
+import { useTimeSlots } from "@/hooks/useTimeSlots";
+import { SlotButton } from "./SlotButton";
+import { EditControls } from "./EditControls";
+import { ReasonModal } from "./ReasonModal";
 
 export interface TimeSlot {
   time: string;
@@ -17,11 +17,12 @@ export interface TimeSlot {
 
 interface TimeSlotsProps {
   selectedDate?: Date;
-  onSlotSelect?: (time: string) => void;
+  onSlotSelect?: (slot: TimeSlot) => void;
   selectedSlot?: string;
   editMode?: boolean;
   onSlotsUpdate?: (slots: TimeSlot[]) => void;
   onSlotsData?: (slots: TimeSlot[]) => void;
+  availabilityData?: any[];
 }
 
 export const TimeSlots: React.FC<TimeSlotsProps> = ({
@@ -31,265 +32,39 @@ export const TimeSlots: React.FC<TimeSlotsProps> = ({
   editMode = false,
   onSlotsUpdate,
   onSlotsData,
+  availabilityData,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [slots, setSlots] = useState<TimeSlot[]>([]);
-  const [selectedSlotsForEdit, setSelectedSlotsForEdit] = useState<Set<number>>(new Set());
-  const [reasonModalOpen, setReasonModalOpen] = useState(false);
-  const [currentReason, setCurrentReason] = useState("");
-  const [pendingSlotIndices, setPendingSlotIndices] = useState<number[]>([]);
+  const {
+    isEditing,
+    setIsEditing,
+    slots,
+    selectedSlotsForEdit,
+    reasonModalOpen,
+    currentReason,
+    setCurrentReason,
+    pendingSlotIndices,
+    canEditSlots,
+    canEditSlot,
+    handleSlotClick,
+    handleMarkAvailable,
+    handleMarkUnavailable,
+    handleConfirmUnavailable,
+    handleCancelReason,
+    handleSaveChanges,
+    handleCancelEdit,
+    getSlotDisplay,
+  } = useTimeSlots({
+    selectedDate,
+    onSlotsUpdate,
+    onSlotsData,
+    availabilityData,
+  });
 
-  // Check if slots can be edited (not past dates)
-  const canEditSlots = (): boolean => {
-    if (!selectedDate) return false;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const selectedDateOnly = new Date(selectedDate);
-    selectedDateOnly.setHours(0, 0, 0, 0);
-    
-    // If date is in the past, cannot edit
-    if (selectedDateOnly < today) return false;
-    
-    // If date is today, check if current time allows editing
-    if (selectedDateOnly.getTime() === today.getTime()) {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      
-      // Only allow editing if current time is before 6:00 PM
-      return currentHour < 18 || (currentHour === 18 && currentMinute === 0);
-    }
-    
-    // Future dates can be edited
-    return true;
-  };
-
-  // Check if a specific slot can be edited
-  const canEditSlot = (slot: TimeSlot): boolean => {
-    if (!selectedDate) return false;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const selectedDateOnly = new Date(selectedDate);
-    selectedDateOnly.setHours(0, 0, 0, 0);
-    
-    // If date is in the past, cannot edit
-    if (selectedDateOnly < today) return false;
-    
-    // If date is today, check if slot time is in the future
-    if (selectedDateOnly.getTime() === today.getTime()) {
-      const now = new Date();
-      // Parse time like "10:00 AM" or "02:30 PM"
-      const timeMatch = slot.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (!timeMatch) return false;
-      
-      let hours = parseInt(timeMatch[1]);
-      const minutes = parseInt(timeMatch[2]);
-      const ampm = timeMatch[3].toUpperCase();
-      
-      if (ampm === 'PM' && hours !== 12) hours += 12;
-      if (ampm === 'AM' && hours === 12) hours = 0;
-      
-      const slotTime = new Date();
-      slotTime.setHours(hours, minutes, 0, 0);
-      
-      // Only allow editing if slot time is after current time
-      return slotTime > now;
-    }
-    
-    // Future dates can be edited
-    return true;
-  };
-
-  // Generate time slots from 9:30 AM to 6:00 PM in 30-minute intervals
-  const generateTimeSlots = (): TimeSlot[] => {
-    const slots: TimeSlot[] = [];
-    const startTime = new Date();
-    startTime.setHours(9, 30, 0, 0); // 9:30 AM
-
-    const endTime = new Date();
-    endTime.setHours(18, 0, 0, 0); // 6:00 PM
-
-    const currentTime = new Date(startTime);
-
-    while (currentTime <= endTime) {
-      const timeString = currentTime.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
-
-      // Mock some booked/unavailable slots
-      let slot: TimeSlot = {
-        time: timeString,
-        available: true,
-      };
-
-      // Example: 10:00 AM booked for meeting
-      if (timeString === "10:00 AM") {
-        slot = {
-          time: timeString,
-          available: false,
-          booked: true,
-          reason: "Team meeting",
-          person: "John Doe",
-          meetingLink: "https://meet.google.com/abc-defg-hij",
-          type: "meeting",
-        };
-      }
-      // Example: 11:30 AM unavailable for maintenance
-      else if (timeString === "11:30 AM") {
-        slot = {
-          time: timeString,
-          available: false,
-          booked: false,
-          reason: "System maintenance",
-          type: "maintenance",
-        };
-      }
-      // Example: 2:00 PM booked for personal appointment
-      else if (timeString === "02:00 PM") {
-        slot = {
-          time: timeString,
-          available: false,
-          booked: true,
-          reason: "Personal appointment",
-          person: "Jane Smith",
-          type: "personal",
-        };
-      }
-
-      slots.push(slot);
-
-      // Add 30 minutes
-      currentTime.setMinutes(currentTime.getMinutes() + 30);
-    }
-
-    return slots;
-  };
-
-  // Initialize slots when component mounts or date changes
-  useEffect(() => {
-    if (selectedDate) {
-      const newSlots = generateTimeSlots();
-      setSlots(newSlots);
-      onSlotsData?.(newSlots);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate]);
-
-  const handleSlotClick = (slot: TimeSlot, index: number) => {
+  const handleSlotClickWrapper = (slot: TimeSlot, index: number) => {
     if (isEditing) {
-      // Check if this specific slot can be edited
-      if (!canEditSlot(slot)) return;
-      
-      // Only allow editing available and unavailable slots, not booked ones
-      if (slot.booked) return;
-
-      const newSelectedSlots = new Set(selectedSlotsForEdit);
-      
-      if (newSelectedSlots.has(index)) {
-        // Deselect
-        newSelectedSlots.delete(index);
-      } else {
-        // Select
-        newSelectedSlots.add(index);
-      }
-      
-      setSelectedSlotsForEdit(newSelectedSlots);
+      handleSlotClick(slot, index);
     } else {
-      // Allow selecting any slot to view details
-      onSlotSelect?.(slot.time);
-    }
-  };
-
-  const handleMarkAvailable = () => {
-    const newSlots = [...slots];
-    selectedSlotsForEdit.forEach(index => {
-      newSlots[index] = {
-        ...newSlots[index],
-        available: true,
-        booked: false,
-        reason: undefined,
-      };
-    });
-    setSlots(newSlots);
-    setSelectedSlotsForEdit(new Set());
-    onSlotsData?.(newSlots);
-  };
-
-  const handleMarkUnavailable = () => {
-    setPendingSlotIndices(Array.from(selectedSlotsForEdit));
-    setCurrentReason("");
-    setReasonModalOpen(true);
-  };
-
-  const handleConfirmUnavailable = () => {
-    const newSlots = [...slots];
-    pendingSlotIndices.forEach(index => {
-      newSlots[index] = {
-        ...newSlots[index],
-        available: false,
-        booked: false,
-        reason: currentReason.trim() || "Unavailable",
-      };
-    });
-    setSlots(newSlots);
-    setSelectedSlotsForEdit(new Set());
-    setReasonModalOpen(false);
-    setPendingSlotIndices([]);
-    onSlotsData?.(newSlots);
-  };
-
-  const handleCancelReason = () => {
-    setReasonModalOpen(false);
-    setPendingSlotIndices([]);
-    setCurrentReason("");
-  };
-
-  const handleSaveChanges = () => {
-    onSlotsUpdate?.(slots);
-    setIsEditing(false);
-    setSelectedSlotsForEdit(new Set());
-  };
-
-  const handleCancelEdit = () => {
-    const resetSlots = generateTimeSlots(); // Reset to all available
-    setSlots(resetSlots);
-    onSlotsData?.(resetSlots);
-    setIsEditing(false);
-    setSelectedSlotsForEdit(new Set());
-  };
-
-  const getSlotDisplay = (slot: TimeSlot) => {
-    if (slot.available) {
-      return {
-        icon: CheckCircle,
-        iconColor: "text-green-500",
-        text: "Available",
-        textColor: "text-green-600",
-        bgColor:
-          selectedSlot === slot.time
-            ? "bg-primary text-primary-foreground border-primary"
-            : "bg-background hover:bg-accent hover:border-accent-foreground border-border",
-      };
-    } else if (slot.booked) {
-      return {
-        icon: XCircle,
-        iconColor: "text-red-500",
-        text: "Booked",
-        textColor: "text-red-600",
-        bgColor: "bg-destructive/10 border-destructive/20 text-destructive",
-      };
-    } else {
-      return {
-        icon: XCircle,
-        iconColor: "text-muted-foreground",
-        text: "Unavailable",
-        textColor: "text-muted-foreground",
-        bgColor: "bg-muted border-muted-foreground/20 text-muted-foreground",
-      };
+      onSlotSelect?.(slot);
     }
   };
 
@@ -309,62 +84,17 @@ export const TimeSlots: React.FC<TimeSlotsProps> = ({
           </h3>
         </div>
 
-        {selectedDate && editMode && canEditSlots() && (
-          <div className="flex gap-2">
-            {!isEditing ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2"
-              >
-                <Edit3 className="h-4 w-4" />
-                Edit Slots
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                {selectedSlotsForEdit.size > 0 && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleMarkAvailable}
-                      className="flex items-center gap-2"
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                      Mark Available ({selectedSlotsForEdit.size})
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleMarkUnavailable}
-                      className="flex items-center gap-2"
-                    >
-                      <XCircle className="h-4 w-4" />
-                      Mark Unavailable ({selectedSlotsForEdit.size})
-                    </Button>
-                  </>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancelEdit}
-                  className="flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSaveChanges}
-                  className="flex items-center gap-2"
-                >
-                  <Save className="h-4 w-4" />
-                  Save
-                </Button>
-              </div>
-            )}
-          </div>
+        {selectedDate && editMode && (
+          <EditControls
+            isEditing={isEditing}
+            canEditSlots={canEditSlots}
+            selectedSlotsForEdit={selectedSlotsForEdit}
+            onEditToggle={() => setIsEditing(!isEditing)}
+            onMarkAvailable={handleMarkAvailable}
+            onMarkUnavailable={handleMarkUnavailable}
+            onCancelEdit={handleCancelEdit}
+            onSaveChanges={handleSaveChanges}
+          />
         )}
       </div>
 
@@ -391,49 +121,19 @@ export const TimeSlots: React.FC<TimeSlotsProps> = ({
           )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-7 gap-2 sm:gap-3">
-            {slots.map((slot, index) => {
-              const display = getSlotDisplay(slot);
-              const IconComponent = display.icon;
-
-              return (
-                <button
-                  key={slot.time}
-                  onClick={() => handleSlotClick(slot, index)}
-                  disabled={isEditing ? (slot.booked || !canEditSlot(slot)) : false}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg border transition-all duration-200 text-center",
-                    isEditing
-                      ? slot.booked || !canEditSlot(slot)
-                        ? "cursor-not-allowed opacity-60"
-                        : selectedSlotsForEdit.has(index)
-                        ? "cursor-pointer ring-2 ring-primary bg-primary/10 border-primary"
-                        : "hover:scale-105 active:scale-95 cursor-pointer"
-                      : "hover:scale-105 active:scale-95 cursor-pointer",
-                    display.bgColor,
-                    selectedSlot === slot.time &&
-                      !isEditing &&
-                      "ring-2 ring-primary/20"
-                  )}
-                >
-                  <span className="text-xs sm:text-sm font-medium mb-1">
-                    {slot.time}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <IconComponent
-                      className={cn("h-3 w-3", display.iconColor)}
-                    />
-                    <span
-                      className={cn(
-                        "text-xs hidden sm:inline",
-                        display.textColor
-                      )}
-                    >
-                      {display.text}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+            {slots.map((slot, index) => (
+              <SlotButton
+                key={slot.time}
+                slot={slot}
+                index={index}
+                isEditing={isEditing}
+                selectedSlot={selectedSlot}
+                selectedSlotsForEdit={selectedSlotsForEdit}
+                canEditSlot={canEditSlot}
+                onSlotClick={handleSlotClickWrapper}
+                getSlotDisplay={getSlotDisplay}
+              />
+            ))}
           </div>
         </>
       )}
@@ -457,32 +157,14 @@ export const TimeSlots: React.FC<TimeSlotsProps> = ({
         </div>
       )}
 
-      {/* Reason Modal */}
-      <Modal
+      <ReasonModal
         isOpen={reasonModalOpen}
         onClose={handleCancelReason}
-        title="Reason for Unavailability"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Please provide a reason for marking {pendingSlotIndices.length} slot{pendingSlotIndices.length !== 1 ? 's' : ''} as unavailable:
-          </p>
-          <Input
-            value={currentReason}
-            onChange={(e) => setCurrentReason(e.target.value)}
-            placeholder="Enter reason (optional)"
-            className="w-full"
-          />
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={handleCancelReason}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmUnavailable}>
-              Confirm
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        currentReason={currentReason}
+        setCurrentReason={setCurrentReason}
+        pendingSlotIndices={pendingSlotIndices}
+        onConfirm={handleConfirmUnavailable}
+      />
     </div>
   );
 };

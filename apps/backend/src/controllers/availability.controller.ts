@@ -120,7 +120,6 @@ export const deleteAvailability = async (req: Request, res: Response) => {
         message: "Availability slot not found",
       });
     }
-
     res.json({
       success: true,
       message: "Availability slot deleted successfully",

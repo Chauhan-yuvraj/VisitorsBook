@@ -98,7 +98,8 @@ const Dashboard = () => {
   const { stats, chartData, recentActivity } = useDashboardData();
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [selectedSlot, setSelectedSlot] = React.useState<string | undefined>();
-  const [slotsData, setSlotsData] = React.useState<TimeSlot[]>([]);
+  const [selectedSlotData, setSelectedSlotData] = React.useState<TimeSlot | undefined>();
+  const [availabilityData, setAvailabilityData] = React.useState<any[]>([]);
   const { user } = useSelector((state: RootState) => state.auth);
 
   // Load availability when date changes
@@ -116,33 +117,9 @@ const Dashboard = () => {
         );
         console.log("response :", response);
         if (response.success && response.data) {
-          // Convert availability data to TimeSlot format
-          const availabilityMap = new Map();
-          response.data.forEach((avail: any) => {
-            const startTime = new Date(avail.startTime);
-            const timeString = startTime.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            });
-            availabilityMap.set(timeString, avail);
-          });
-
-          // Update slotsData with availability info
-          setSlotsData((prevSlots) =>
-            prevSlots.map((slot) => {
-              const availability = availabilityMap.get(slot.time);
-              if (availability) {
-                return {
-                  ...slot,
-                  available:
-                    availability.status === "UNAVAILABLE" ? false : true,
-                  reason: availability.reason || undefined,
-                };
-              }
-              return slot;
-            })
-          );
+          setAvailabilityData(response.data);
+        } else {
+          setAvailabilityData([]);
         }
       } catch (error) {
         console.error("Failed to load availability:", error);
@@ -151,16 +128,15 @@ const Dashboard = () => {
     };
 
     loadAvailability();
-  }, [date, user?.id]);
+  }, [date, user?._id]);
 
-  const handleSlotSelect = (time: string) => {
-    setSelectedSlot(time);
-    // Here you could add logic to book the slot or show a confirmation
-    console.log(`Selected slot: ${time} on ${date?.toDateString()}`);
+  const handleSlotSelect = (slot: TimeSlot) => {
+    setSelectedSlot(slot.time);
+    setSelectedSlotData(slot);
   };
 
   const handleSlotsUpdate = async (updatedSlots: TimeSlot[]) => {
-    if (!user?.id || !date) return;
+    if (!user?._id || !date) return;
 
     try {
       // Convert TimeSlot format to AvailabilitySlot format
@@ -193,7 +169,7 @@ const Dashboard = () => {
         })
         .filter(Boolean) as any[];
 
-      await availabilityService.updateAvailability(user.id, availabilitySlots);
+      await availabilityService.updateAvailability(user._id, availabilitySlots);
       alert("Availability updated successfully");
     } catch (error) {
       console.error("Failed to update availability:", error);
@@ -201,13 +177,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleSlotsData = (slots: TimeSlot[]) => {
-    setSlotsData(slots);
-  };
 
-  const getSelectedSlotDetails = (): TimeSlot | undefined => {
-    return slotsData.find((slot) => slot.time === selectedSlot);
-  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -297,14 +267,14 @@ const Dashboard = () => {
                 selectedSlot={selectedSlot}
                 editMode={true}
                 onSlotsUpdate={handleSlotsUpdate}
-                onSlotsData={handleSlotsData}
+                availabilityData={availabilityData}
               />
             </div>
           </div>
 
           <div className="w-full flex justify-center lg:justify-start">
             <div className="w-full max-w-sm mx-auto lg:mx-0">
-              <SlotStatusCard selectedSlot={getSelectedSlotDetails()} />
+              <SlotStatusCard selectedSlot={selectedSlotData} />
             </div>
           </div>
         </div>
