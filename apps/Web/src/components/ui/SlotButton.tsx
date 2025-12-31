@@ -1,15 +1,8 @@
 import React from "react";
 import { CheckCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { TimeSlot } from "./TimeSlots";
-
-interface SlotDisplay {
-  icon: "CheckCircle" | "XCircle";
-  iconColor: string;
-  text: string;
-  textColor: string;
-  bgColor: string;
-}
+import { getSlotDisplay } from "@/utils/timeSlots";
+import type { TimeSlot } from "@/utils/timeSlots";
 
 interface SlotButtonProps {
   slot: TimeSlot;
@@ -19,7 +12,6 @@ interface SlotButtonProps {
   selectedSlotsForEdit: Set<number>;
   canEditSlot: (slot: TimeSlot) => boolean;
   onSlotClick: (slot: TimeSlot, index: number) => void;
-  getSlotDisplay: (slot: TimeSlot) => SlotDisplay;
 }
 
 export const SlotButton: React.FC<SlotButtonProps> = ({
@@ -30,7 +22,6 @@ export const SlotButton: React.FC<SlotButtonProps> = ({
   selectedSlotsForEdit,
   canEditSlot,
   onSlotClick,
-  getSlotDisplay,
 }) => {
   const display = getSlotDisplay(slot);
   const IconComponent = display.icon === "CheckCircle" ? CheckCircle : XCircle;

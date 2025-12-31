@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useMeetings } from "@/hooks/useMeetings";
 import MeetingModal from "@/components/Meeting/MeetingModal";
@@ -27,13 +27,6 @@ export default function Meetings() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  // Load meetings when user changes
-  useEffect(() => {
-    if (user?._id) {
-      fetchMeetings(user._id);
-    }
-  }, [user?._id, fetchMeetings]);
 
   const handleEdit = (meeting: Meeting) => {
     setMeetingToEdit(meeting);

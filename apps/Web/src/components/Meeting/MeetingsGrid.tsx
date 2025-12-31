@@ -100,7 +100,6 @@ export const MeetingsGrid: React.FC<MeetingsGridProps> = ({
                 {meeting.status.toUpperCase()}
               </span>
             </div>
-shrink-0
             <div className="space-y-2 text-sm mb-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="h-4 w-4 shrink-0" />

@@ -73,9 +73,6 @@ export const UpcomingMeetings: React.FC<UpcomingMeetingsProps> = ({ meetings = [
             })}`;
 
             // Handle populated host/participants (could be object or string)
-            const hostName = typeof meeting.host === 'object' && meeting.host?.name 
-              ? meeting.host.name 
-              : 'Meeting';
             const participantCount = Array.isArray(meeting.participants) 
               ? meeting.participants.length 
               : 0;

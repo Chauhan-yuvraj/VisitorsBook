@@ -26,12 +26,12 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({ activities }) =>
               className="flex items-start gap-3 pb-3 sm:pb-4 border-b last:border-0 last:pb-0"
             >
               <div
-                className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${
+                className={`mt-1 h-2 w-2 rounded-full shrink-0 ${
                   activity.type === "visit" ? "bg-blue-500" : "bg-orange-500"
                 }`}
               />
               <div className="flex-1 space-y-1 min-w-0">
-                <p className="text-sm font-medium leading-tight break-words">
+                <p className="text-sm font-medium leading-tight wrap-break-word">
                   {activity.title}
                 </p>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">

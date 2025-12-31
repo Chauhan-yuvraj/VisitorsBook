@@ -1,6 +1,11 @@
-import { useState, useEffect } from "react";
-import { TIME_SLOT_CONFIG } from "@/constants/timeSlots";
-import type { TimeSlot } from "@/components/ui/TimeSlots";
+import { useState, useEffect } from 'react';
+import {
+  generateTimeSlots,
+  canEditDate,
+  canEditSlot as canEditSlotUtil,
+  mergeSlotsWithData,
+} from '@/utils/timeSlots';
+import type { TimeSlot } from '@/utils/timeSlots';
 
 interface UseTimeSlotsProps {
   selectedDate?: Date;
@@ -23,176 +28,26 @@ export const useTimeSlots = ({
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [selectedSlotsForEdit, setSelectedSlotsForEdit] = useState<Set<number>>(new Set());
   const [reasonModalOpen, setReasonModalOpen] = useState(false);
-  const [currentReason, setCurrentReason] = useState("");
+  const [currentReason, setCurrentReason] = useState('');
   const [pendingSlotIndices, setPendingSlotIndices] = useState<number[]>([]);
 
   // Check if slots can be edited (not past dates)
   const canEditSlots = (): boolean => {
     if (!selectedDate) return false;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const selectedDateOnly = new Date(selectedDate);
-    selectedDateOnly.setHours(0, 0, 0, 0);
-
-    // If date is in the past, cannot edit
-    if (selectedDateOnly < today) return false;
-
-    // If date is today, check if current time allows editing
-    if (selectedDateOnly.getTime() === today.getTime()) {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-
-      // Only allow editing if current time is before 6:00 PM
-      return currentHour < 18 || (currentHour === 18 && currentMinute === 0);
-    }
-
-    // Future dates can be edited
-    return true;
+    return canEditDate(selectedDate);
   };
 
   // Check if a specific slot can be edited
   const canEditSlot = (slot: TimeSlot): boolean => {
     if (!selectedDate) return false;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const selectedDateOnly = new Date(selectedDate);
-    selectedDateOnly.setHours(0, 0, 0, 0);
-
-    // If date is in the past, cannot edit
-    if (selectedDateOnly < today) return false;
-
-    // If date is today, check if slot time is in the future
-    if (selectedDateOnly.getTime() === today.getTime()) {
-      const now = new Date();
-      // Parse time like "10:00 AM" or "02:30 PM"
-      const timeMatch = slot.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (!timeMatch) return false;
-
-      let hours = parseInt(timeMatch[1]);
-      const minutes = parseInt(timeMatch[2]);
-      const ampm = timeMatch[3].toUpperCase();
-
-      if (ampm === 'PM' && hours !== 12) hours += 12;
-      if (ampm === 'AM' && hours === 12) hours = 0;
-
-      const slotTime = new Date();
-      slotTime.setHours(hours, minutes, 0, 0);
-
-      // Only allow editing if slot time is after current time
-      return slotTime > now;
-    }
-
-    // Future dates can be edited
-    return true;
-  };
-
-  // Generate time slots from 9:30 AM to 6:00 PM in 30-minute intervals
-  const generateTimeSlots = (): TimeSlot[] => {
-    const slots: TimeSlot[] = [];
-    const startTime = new Date();
-    startTime.setHours(TIME_SLOT_CONFIG.startHour, TIME_SLOT_CONFIG.startMinute, 0, 0);
-
-    const endTime = new Date();
-    endTime.setHours(TIME_SLOT_CONFIG.endHour, TIME_SLOT_CONFIG.endMinute, 0, 0);
-
-    const currentTime = new Date(startTime);
-
-    while (currentTime <= endTime) {
-      const timeString = currentTime.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
-
-      // Mock some booked/unavailable slots
-      let slot: TimeSlot = {
-        time: timeString,
-        available: true,
-      };
-      slots.push(slot);
-
-      // Add 30 minutes
-      currentTime.setMinutes(currentTime.getMinutes() + TIME_SLOT_CONFIG.intervalMinutes);
-    }
-
-    return slots;
+    return canEditSlotUtil(slot, selectedDate);
   };
 
   // Initialize slots when component mounts or date changes
   useEffect(() => {
     if (selectedDate) {
       const newSlots = generateTimeSlots();
-      const selectedDateStr = selectedDate.toISOString().split('T')[0];
-
-      // Create availability map
-      const availabilityMap = new Map();
-      if (availabilityData && availabilityData.length > 0) {
-        availabilityData.forEach((avail: any) => {
-          const startTime = new Date(avail.startTime);
-          const timeString = startTime.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          });
-          availabilityMap.set(timeString, avail);
-        });
-      }
-
-      // Create meetings map for the selected date
-      const meetingsMap = new Map();
-      if (meetingsData && meetingsData.length > 0) {
-        meetingsData.forEach((meeting: any) => {
-          if (meeting.status === 'scheduled' && meeting.timeSlots) {
-            meeting.timeSlots.forEach((slot: any) => {
-              if (slot.date === selectedDateStr) {
-                const startTime = new Date(slot.startTime);
-                const timeString = startTime.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                });
-                meetingsMap.set(timeString, {
-                  ...meeting,
-                  slotStartTime: slot.startTime,
-                  slotEndTime: slot.endTime,
-                });
-              }
-            });
-          }
-        });
-      }
-
-      // Merge slots with availability and meetings (meetings take priority)
-      const mergedSlots = newSlots.map((slot) => {
-        const meeting = meetingsMap.get(slot.time);
-        const availability = availabilityMap.get(slot.time);
-
-        // Meeting takes priority - mark as booked
-        if (meeting) {
-          const hostName = typeof meeting.host === 'object' && meeting.host?.name 
-            ? meeting.host.name 
-            : 'Meeting';
-          return {
-            ...slot,
-            available: false,
-            booked: true,
-            reason: meeting.title,
-            person: hostName,
-            type: 'meeting' as const,
-            meetingLink: meeting.isVirtual ? meeting.location : undefined,
-          };
-        } else if (availability) {
-          return {
-            ...slot,
-            available: availability.status === "UNAVAILABLE" ? false : true,
-            reason: availability.reason || undefined,
-          };
-        }
-        return slot;
-      });
+      const mergedSlots = mergeSlotsWithData(newSlots, selectedDate, availabilityData, meetingsData);
 
       setSlots(mergedSlots);
       onSlotsData?.(mergedSlots);
@@ -220,10 +75,8 @@ export const useTimeSlots = ({
       }
 
       setSelectedSlotsForEdit(newSelectedSlots);
-    } else {
-      // Allow selecting any slot to view details
-      // onSlotSelect is handled in the component
     }
+    // Non-editing mode slot selection is handled in the component
   };
 
   const handleMarkAvailable = () => {
@@ -244,7 +97,7 @@ export const useTimeSlots = ({
 
   const handleMarkUnavailable = () => {
     setPendingSlotIndices(Array.from(selectedSlotsForEdit));
-    setCurrentReason("");
+    setCurrentReason('');
     setReasonModalOpen(true);
   };
 
@@ -255,7 +108,7 @@ export const useTimeSlots = ({
         ...newSlots[index],
         available: false,
         booked: false,
-        reason: currentReason.trim() || "Unavailable",
+        reason: currentReason.trim() || 'Unavailable',
       };
     });
     setSlots(newSlots);
@@ -269,7 +122,7 @@ export const useTimeSlots = ({
   const handleCancelReason = () => {
     setReasonModalOpen(false);
     setPendingSlotIndices([]);
-    setCurrentReason("");
+    setCurrentReason('');
   };
 
   const handleSaveChanges = () => {
@@ -282,74 +135,7 @@ export const useTimeSlots = ({
     // Reset to the state before editing started - reload from availability data and meetings
     if (selectedDate) {
       const newSlots = generateTimeSlots();
-      const selectedDateStr = selectedDate.toISOString().split('T')[0];
-
-      // Create availability map
-      const availabilityMap = new Map();
-      if (availabilityData && availabilityData.length > 0) {
-        availabilityData.forEach((avail: any) => {
-          const startTime = new Date(avail.startTime);
-          const timeString = startTime.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          });
-          availabilityMap.set(timeString, avail);
-        });
-      }
-
-      // Create meetings map for the selected date
-      const meetingsMap = new Map();
-      if (meetingsData && meetingsData.length > 0) {
-        meetingsData.forEach((meeting: any) => {
-          if (meeting.status === 'scheduled' && meeting.timeSlots) {
-            meeting.timeSlots.forEach((slot: any) => {
-              if (slot.date === selectedDateStr) {
-                const startTime = new Date(slot.startTime);
-                const timeString = startTime.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                });
-                meetingsMap.set(timeString, {
-                  ...meeting,
-                  slotStartTime: slot.startTime,
-                  slotEndTime: slot.endTime,
-                });
-              }
-            });
-          }
-        });
-      }
-
-      // Merge slots with availability and meetings (meetings take priority)
-      const mergedSlots = newSlots.map((slot) => {
-        const meeting = meetingsMap.get(slot.time);
-        const availability = availabilityMap.get(slot.time);
-
-        // Meeting takes priority - mark as booked
-        if (meeting) {
-          const hostName = typeof meeting.host === 'object' && meeting.host?.name 
-            ? meeting.host.name 
-            : 'Meeting';
-          return {
-            ...slot,
-            available: false,
-            booked: true,
-            reason: meeting.title,
-            person: hostName,
-            type: 'meeting' as const,
-            meetingLink: meeting.isVirtual ? meeting.location : undefined,
-          };
-        } else if (availability) {
-          return {
-            ...slot,
-            available: availability.status === "UNAVAILABLE" ? false : true,
-            reason: availability.reason || undefined,
-          };
-        }
-        return slot;
-      });
+      const mergedSlots = mergeSlotsWithData(newSlots, selectedDate, availabilityData, meetingsData);
 
       setSlots(mergedSlots);
       onSlotsData?.(mergedSlots);
@@ -357,34 +143,6 @@ export const useTimeSlots = ({
     }
     setIsEditing(false);
     setSelectedSlotsForEdit(new Set());
-  };
-
-  const getSlotDisplay = (slot: TimeSlot) => {
-    if (slot.available) {
-      return {
-        icon: "CheckCircle" as const,
-        iconColor: "text-green-500",
-        text: "Available",
-        textColor: "text-green-600",
-        bgColor: "bg-background hover:bg-accent hover:border-accent-foreground border-border",
-      };
-    } else if (slot.booked) {
-      return {
-        icon: "XCircle" as const,
-        iconColor: "text-red-500",
-        text: "Booked",
-        textColor: "text-red-600",
-        bgColor: "bg-destructive/10 border-destructive/20 text-destructive",
-      };
-    } else {
-      return {
-        icon: "XCircle" as const,
-        iconColor: "text-muted-foreground",
-        text: "Unavailable",
-        textColor: "text-muted-foreground",
-        bgColor: "bg-muted border-muted-foreground/20 text-muted-foreground",
-      };
-    }
   };
 
   return {
@@ -406,6 +164,5 @@ export const useTimeSlots = ({
     handleCancelReason,
     handleSaveChanges,
     handleCancelEdit,
-    getSlotDisplay,
   };
 };

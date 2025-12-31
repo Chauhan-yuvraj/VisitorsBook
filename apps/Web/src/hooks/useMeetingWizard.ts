@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useEmployees } from '@/hooks/useEmployees';
 import { useMeetings } from '@/hooks/useMeetings';
+import { isSlotInPast } from '@/utils/timeSlots';
 import type { Meeting, MeetingTimeSlot } from '@/types/meeting';
 import type { RootState } from '@/store/store';
 import type { MeetingWizardStep, MeetingWizardFormData } from '@/constants/meetingWizard';
@@ -98,6 +99,11 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
 
   const handleSlotSelect = (slot: { time: string; available: boolean; booked?: boolean }) => {
     if (!selectedDate) return;
+
+    // Check if the slot is in the past
+    if (isSlotInPast({ time: slot.time, available: slot.available, booked: slot.booked }, selectedDate)) {
+      return; // Don't allow selection of past slots
+    }
 
     // Convert time string (e.g., "9:30 AM") to ISO datetime strings
     const timeMatch = slot.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
