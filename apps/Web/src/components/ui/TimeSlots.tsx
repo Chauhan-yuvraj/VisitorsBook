@@ -24,6 +24,7 @@ interface TimeSlotsProps {
   onSlotsData?: (slots: TimeSlot[]) => void;
   onSlotsChange?: (slots: TimeSlot[]) => void;
   availabilityData?: any[];
+  meetingsData?: any[];
 }
 
 export const TimeSlots: React.FC<TimeSlotsProps> = ({
@@ -35,6 +36,7 @@ export const TimeSlots: React.FC<TimeSlotsProps> = ({
   onSlotsData,
   onSlotsChange,
   availabilityData,
+  meetingsData,
 }) => {
   const {
     isEditing,
@@ -61,6 +63,7 @@ export const TimeSlots: React.FC<TimeSlotsProps> = ({
     onSlotsData,
     onSlotsChange,
     availabilityData,
+    meetingsData,
   });
 
   const handleSlotClickWrapper = (slot: TimeSlot, index: number) => {

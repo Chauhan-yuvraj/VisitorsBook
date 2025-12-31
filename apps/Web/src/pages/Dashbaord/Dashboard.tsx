@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { StatsCard } from "@/components/Dashboard/StatsCard";
 import { VisitsChart } from "@/components/Dashboard/VisitsChart";
 import { RecentActivity } from "@/components/Dashboard/RecentActivity";
+import { UpcomingMeetings } from "@/components/Dashboard/UpcomingMeetings";
 import { useDashboardData } from "@/hooks/Dashboard/useDashboardData";
 import { Calendar } from "@/components/ui/calendar";
 import { TimeSlots, type TimeSlot } from "@/components/ui/TimeSlots";
@@ -11,6 +12,7 @@ import MeetingModal from "@/components/Meeting/MeetingModal";
 import React from "react";
 import { useSelector } from "react-redux";
 import { availabilityService } from "@/services/availability.service";
+import { useMeetings } from "@/hooks/useMeetings";
 import type { RootState } from "@/store/store";
 
 const SlotStatusCard: React.FC<{ selectedSlot?: TimeSlot }> = ({
@@ -103,6 +105,17 @@ const Dashboard = () => {
   const [slotsData, setSlotsData] = React.useState<TimeSlot[]>([]);
   const [isMeetingModalOpen, setIsMeetingModalOpen] = React.useState(false);
   const { user } = useSelector((state: RootState) => state.auth);
+  
+  // Fetch meetings for the user
+  const { meetings, loading: meetingsLoading, fetchMeetings } = useMeetings(user?._id);
+
+  // Load meetings when user changes
+  React.useEffect(() => {
+    if (user?._id) {
+      fetchMeetings(user._id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?._id]);
 
   // Load availability when date changes
   React.useEffect(() => {
@@ -232,6 +245,34 @@ const Dashboard = () => {
     return slotsData.find((slot) => slot.time === selectedSlot);
   };
 
+  // Handle meeting modal close and refresh data
+  const handleMeetingModalClose = async () => {
+    setIsMeetingModalOpen(false);
+    // Small delay to ensure backend has processed the meeting
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Refresh meetings and availability after meeting creation
+    if (user?._id) {
+      try {
+        // Refresh meetings
+        await fetchMeetings(user._id);
+        
+        // Refresh availability for current date
+        if (date) {
+          const dateString = date.toISOString().split("T")[0];
+          const response = await availabilityService.getAvailability(user._id, dateString);
+          if (response.success && response.data) {
+            setAvailabilityData(response.data);
+          } else {
+            setAvailabilityData([]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to refresh data after meeting creation:", error);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -290,6 +331,16 @@ const Dashboard = () => {
         />
       </div>
 
+      {/* Upcoming Meetings Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+        <div className="lg:col-span-1">
+          <UpcomingMeetings meetings={meetings} loading={meetingsLoading} />
+        </div>
+        <div className="lg:col-span-2">
+          {/* Empty space for future components or leave empty */}
+        </div>
+      </div>
+
       {/* // Calendar and Time Slots - side by side */}
 
       <div className="mt-8">
@@ -325,6 +376,7 @@ const Dashboard = () => {
                 onSlotsUpdate={handleSlotsUpdate}
                 onSlotsChange={handleSlotsData}
                 availabilityData={availabilityData}
+                meetingsData={meetings}
               />
             </div>
           </div>
@@ -350,7 +402,7 @@ const Dashboard = () => {
       {/* Meeting Modal */}
       <MeetingModal
         isOpen={isMeetingModalOpen}
-        onClose={() => setIsMeetingModalOpen(false)}
+        onClose={handleMeetingModalClose}
       />
     </div>
   );

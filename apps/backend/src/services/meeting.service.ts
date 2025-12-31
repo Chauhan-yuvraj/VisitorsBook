@@ -128,8 +128,6 @@ export class MeetingService {
       await meeting.save({ session });
 
       // Check availability and create logs
-      // Check availability and create logs
-      // Check availability and create logs
       const timeSlotsForCheck = meetingData.timeSlots!.map((slot) => ({
         date: slot.date,
         startTime:

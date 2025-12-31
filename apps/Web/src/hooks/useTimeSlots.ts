@@ -8,6 +8,7 @@ interface UseTimeSlotsProps {
   onSlotsData?: (slots: TimeSlot[]) => void;
   onSlotsChange?: (slots: TimeSlot[]) => void;
   availabilityData?: any[];
+  meetingsData?: any[];
 }
 
 export const useTimeSlots = ({
@@ -16,6 +17,7 @@ export const useTimeSlots = ({
   onSlotsData,
   onSlotsChange,
   availabilityData,
+  meetingsData,
 }: UseTimeSlotsProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
@@ -123,10 +125,11 @@ export const useTimeSlots = ({
   useEffect(() => {
     if (selectedDate) {
       const newSlots = generateTimeSlots();
+      const selectedDateStr = selectedDate.toISOString().split('T')[0];
 
-      // Merge availability data
+      // Create availability map
+      const availabilityMap = new Map();
       if (availabilityData && availabilityData.length > 0) {
-        const availabilityMap = new Map();
         availabilityData.forEach((avail: any) => {
           const startTime = new Date(avail.startTime);
           const timeString = startTime.toLocaleTimeString([], {
@@ -136,30 +139,67 @@ export const useTimeSlots = ({
           });
           availabilityMap.set(timeString, avail);
         });
-
-        const mergedSlots = newSlots.map((slot) => {
-          const availability = availabilityMap.get(slot.time);
-          if (availability) {
-            return {
-              ...slot,
-              available: availability.status === "UNAVAILABLE" ? false : true,
-              reason: availability.reason || undefined,
-            };
-          }
-          return slot;
-        });
-
-        setSlots(mergedSlots);
-        onSlotsData?.(mergedSlots);
-        onSlotsChange?.(mergedSlots);
-      } else {
-        setSlots(newSlots);
-        onSlotsData?.(newSlots);
-        onSlotsChange?.(newSlots);
       }
+
+      // Create meetings map for the selected date
+      const meetingsMap = new Map();
+      if (meetingsData && meetingsData.length > 0) {
+        meetingsData.forEach((meeting: any) => {
+          if (meeting.status === 'scheduled' && meeting.timeSlots) {
+            meeting.timeSlots.forEach((slot: any) => {
+              if (slot.date === selectedDateStr) {
+                const startTime = new Date(slot.startTime);
+                const timeString = startTime.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+                meetingsMap.set(timeString, {
+                  ...meeting,
+                  slotStartTime: slot.startTime,
+                  slotEndTime: slot.endTime,
+                });
+              }
+            });
+          }
+        });
+      }
+
+      // Merge slots with availability and meetings (meetings take priority)
+      const mergedSlots = newSlots.map((slot) => {
+        const meeting = meetingsMap.get(slot.time);
+        const availability = availabilityMap.get(slot.time);
+
+        // Meeting takes priority - mark as booked
+        if (meeting) {
+          const hostName = typeof meeting.host === 'object' && meeting.host?.name 
+            ? meeting.host.name 
+            : 'Meeting';
+          return {
+            ...slot,
+            available: false,
+            booked: true,
+            reason: meeting.title,
+            person: hostName,
+            type: 'meeting' as const,
+            meetingLink: meeting.isVirtual ? meeting.location : undefined,
+          };
+        } else if (availability) {
+          return {
+            ...slot,
+            available: availability.status === "UNAVAILABLE" ? false : true,
+            reason: availability.reason || undefined,
+          };
+        }
+        return slot;
+      });
+
+      setSlots(mergedSlots);
+      onSlotsData?.(mergedSlots);
+      onSlotsChange?.(mergedSlots);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, availabilityData]);
+  }, [selectedDate, availabilityData, meetingsData]);
 
   const handleSlotClick = (slot: TimeSlot, index: number) => {
     if (isEditing) {
@@ -239,13 +279,14 @@ export const useTimeSlots = ({
   };
 
   const handleCancelEdit = () => {
-    // Reset to the state before editing started - reload from availability data
+    // Reset to the state before editing started - reload from availability data and meetings
     if (selectedDate) {
       const newSlots = generateTimeSlots();
+      const selectedDateStr = selectedDate.toISOString().split('T')[0];
 
-      // Re-merge availability data
+      // Create availability map
+      const availabilityMap = new Map();
       if (availabilityData && availabilityData.length > 0) {
-        const availabilityMap = new Map();
         availabilityData.forEach((avail: any) => {
           const startTime = new Date(avail.startTime);
           const timeString = startTime.toLocaleTimeString([], {
@@ -255,27 +296,64 @@ export const useTimeSlots = ({
           });
           availabilityMap.set(timeString, avail);
         });
-
-        const mergedSlots = newSlots.map((slot) => {
-          const availability = availabilityMap.get(slot.time);
-          if (availability) {
-            return {
-              ...slot,
-              available: availability.status === "UNAVAILABLE" ? false : true,
-              reason: availability.reason || undefined,
-            };
-          }
-          return slot;
-        });
-
-        setSlots(mergedSlots);
-        onSlotsData?.(mergedSlots);
-        onSlotsChange?.(mergedSlots);
-      } else {
-        setSlots(newSlots);
-        onSlotsData?.(newSlots);
-        onSlotsChange?.(newSlots);
       }
+
+      // Create meetings map for the selected date
+      const meetingsMap = new Map();
+      if (meetingsData && meetingsData.length > 0) {
+        meetingsData.forEach((meeting: any) => {
+          if (meeting.status === 'scheduled' && meeting.timeSlots) {
+            meeting.timeSlots.forEach((slot: any) => {
+              if (slot.date === selectedDateStr) {
+                const startTime = new Date(slot.startTime);
+                const timeString = startTime.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+                meetingsMap.set(timeString, {
+                  ...meeting,
+                  slotStartTime: slot.startTime,
+                  slotEndTime: slot.endTime,
+                });
+              }
+            });
+          }
+        });
+      }
+
+      // Merge slots with availability and meetings (meetings take priority)
+      const mergedSlots = newSlots.map((slot) => {
+        const meeting = meetingsMap.get(slot.time);
+        const availability = availabilityMap.get(slot.time);
+
+        // Meeting takes priority - mark as booked
+        if (meeting) {
+          const hostName = typeof meeting.host === 'object' && meeting.host?.name 
+            ? meeting.host.name 
+            : 'Meeting';
+          return {
+            ...slot,
+            available: false,
+            booked: true,
+            reason: meeting.title,
+            person: hostName,
+            type: 'meeting' as const,
+            meetingLink: meeting.isVirtual ? meeting.location : undefined,
+          };
+        } else if (availability) {
+          return {
+            ...slot,
+            available: availability.status === "UNAVAILABLE" ? false : true,
+            reason: availability.reason || undefined,
+          };
+        }
+        return slot;
+      });
+
+      setSlots(mergedSlots);
+      onSlotsData?.(mergedSlots);
+      onSlotsChange?.(mergedSlots);
     }
     setIsEditing(false);
     setSelectedSlotsForEdit(new Set());

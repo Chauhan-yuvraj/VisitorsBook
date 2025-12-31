@@ -12,14 +12,23 @@ export const useMeetings = (userId?: string) => {
     setLoading(true);
     setError(null);
     try {
+      console.log('Fetching meetings for user:', id);
       const response = await meetingService.getMeetings(id);
+      console.log('Meetings response:', response);
       if (response.success && response.data) {
-        setMeetings(response.data);
+        // Ensure response.data is an array
+        const meetingsArray = Array.isArray(response.data) ? response.data : [];
+        console.log('Setting meetings:', meetingsArray);
+        setMeetings(meetingsArray);
       } else {
+        console.warn('Failed to fetch meetings:', response.message);
         setError(response.message || 'Failed to fetch meetings');
+        setMeetings([]); // Reset to empty array on error
       }
     } catch (err) {
+      console.error('Error fetching meetings:', err);
       setError('Failed to fetch meetings');
+      setMeetings([]);
     } finally {
       setLoading(false);
     }

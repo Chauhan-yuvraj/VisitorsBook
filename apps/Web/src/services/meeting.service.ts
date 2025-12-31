@@ -6,8 +6,13 @@ export const meetingService = {
   createMeeting: async (meetingData: CreateMeetingRequest): Promise<{ success: boolean; data?: Meeting; message?: string }> => {
     try {
       const response = await api.post('/meetings', meetingData);
-      return { success: true, data: response.data };
+      // Backend returns { success: true, data: meeting, availabilityLogs }
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, message: 'Failed to create meeting' };
     } catch (error: any) {
+      console.error('Error creating meeting:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to create meeting'
@@ -19,8 +24,13 @@ export const meetingService = {
   getMeetings: async (userId: string): Promise<{ success: boolean; data?: Meeting[]; message?: string }> => {
     try {
       const response = await api.get(`/meetings/user/${userId}`);
-      return { success: true, data: response.data };
+      // Backend returns { success: true, data: meetings }
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, message: 'No meetings found' };
     } catch (error: any) {
+      console.error('Error fetching meetings:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to fetch meetings'
@@ -32,8 +42,13 @@ export const meetingService = {
   getMeeting: async (meetingId: string): Promise<{ success: boolean; data?: Meeting; message?: string }> => {
     try {
       const response = await api.get(`/meetings/${meetingId}`);
-      return { success: true, data: response.data };
+      // Backend returns { success: true, data: meeting }
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, message: 'Meeting not found' };
     } catch (error: any) {
+      console.error('Error fetching meeting:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to fetch meeting'
@@ -45,8 +60,13 @@ export const meetingService = {
   updateMeeting: async (meetingId: string, meetingData: Partial<CreateMeetingRequest>): Promise<{ success: boolean; data?: Meeting; message?: string }> => {
     try {
       const response = await api.put(`/meetings/${meetingId}`, meetingData);
-      return { success: true, data: response.data };
+      // Backend returns { success: true, data: meeting }
+      if (response.data.success && response.data.data) {
+        return { success: true, data: response.data.data };
+      }
+      return { success: false, message: 'Failed to update meeting' };
     } catch (error: any) {
+      console.error('Error updating meeting:', error);
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to update meeting'
