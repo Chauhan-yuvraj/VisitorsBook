@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/Button";
 import { StatsCard } from "@/components/Dashboard/StatsCard";
 import { VisitsChart } from "@/components/Dashboard/VisitsChart";
 import { RecentActivity } from "@/components/Dashboard/RecentActivity";
-import { UpcomingMeetings } from "@/components/Dashboard/UpcomingMeetings";
 import { useDashboardData } from "@/hooks/Dashboard/useDashboardData";
 import { Calendar } from "@/components/ui/calendar";
 import { TimeSlots, type TimeSlot } from "@/components/ui/TimeSlots";
@@ -107,7 +106,7 @@ const Dashboard = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   
   // Fetch meetings for the user
-  const { meetings, loading: meetingsLoading, fetchMeetings } = useMeetings(user?._id);
+  const { meetings, fetchMeetings } = useMeetings(user?._id);
 
   // Load meetings when user changes
   React.useEffect(() => {
@@ -329,16 +328,6 @@ const Dashboard = () => {
           icon={Users}
           description="Registered in system"
         />
-      </div>
-
-      {/* Upcoming Meetings Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        <div className="lg:col-span-1">
-          <UpcomingMeetings meetings={meetings} loading={meetingsLoading} />
-        </div>
-        <div className="lg:col-span-2">
-          {/* Empty space for future components or leave empty */}
-        </div>
       </div>
 
       {/* // Calendar and Time Slots - side by side */}
