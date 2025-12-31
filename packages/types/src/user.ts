@@ -1,11 +1,8 @@
 export enum UserRole {
   EMPLOYEE = 'employee',
   HR = 'hr',
-  ADMIN = 'admin',
-  PROJECT_MANAGER = 'project_manager',
-  TEAM_LEAD = "team_lead",
-  HOD = 'hod',
-  EXECUTIVE = 'executive'
+  MANAGER = 'manager',
+  ADMIN = 'admin'
 }
 
 export interface IEmployee {
@@ -15,7 +12,7 @@ export interface IEmployee {
   email: string;
   phone?: string;
   departmentId?: string | { _id: string; departmentName: string };
-  jobTitle?: string;
+  jobTitle: string;
   role: UserRole;
   isActive: boolean;
   profileImgUri?: string;

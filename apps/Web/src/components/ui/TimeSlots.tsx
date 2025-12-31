@@ -72,11 +72,11 @@ export const TimeSlots: React.FC<TimeSlotsProps> = ({
   };
 
   return (
-    <div className="bg-card rounded-xl border shadow-sm p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-card rounded-xl border shadow-sm p-4 sm:p-6 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-muted-foreground" />
-          <h3 className="font-semibold text-base sm:text-lg">
+          <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+          <h3 className="font-semibold text-base sm:text-lg leading-tight">
             {selectedDate
               ? `Time Slots - ${selectedDate.toLocaleDateString("en-US", {
                   weekday: "long",
@@ -123,7 +123,7 @@ export const TimeSlots: React.FC<TimeSlotsProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-7 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 max-h-96 overflow-y-auto">
             {slots.map((slot, index) => (
               <SlotButton
                 key={slot.time}
@@ -143,7 +143,7 @@ export const TimeSlots: React.FC<TimeSlotsProps> = ({
 
       {selectedDate && !isEditing && (
         <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
               <span>Available</span>

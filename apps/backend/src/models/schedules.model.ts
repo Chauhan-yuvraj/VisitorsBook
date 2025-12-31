@@ -44,3 +44,5 @@ const scheduleSchema = new Schema({
 
 scheduleSchema.index({ employeeId: 1, startTime: 1, endTime: 1 }, { unique: true });
 const Schedule = mongoose.model("Schedule", scheduleSchema || mongoose.models.Schedule);
+
+export { Schedule };

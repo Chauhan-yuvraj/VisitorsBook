@@ -40,7 +40,7 @@ export const SlotButton: React.FC<SlotButtonProps> = ({
       onClick={() => onSlotClick(slot, index)}
       disabled={isEditing ? (slot.booked || !canEditSlot(slot)) : false}
       className={cn(
-        "flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg border transition-all duration-200 text-center",
+        "flex flex-col items-center justify-center p-3 sm:p-4 rounded-lg border transition-all duration-200 text-center min-h-[60px] sm:min-h-[70px]",
         isEditing
           ? slot.booked || !canEditSlot(slot)
             ? "cursor-not-allowed opacity-60"
@@ -54,16 +54,16 @@ export const SlotButton: React.FC<SlotButtonProps> = ({
           "ring-2 ring-primary/20"
       )}
     >
-      <span className="text-xs sm:text-sm font-medium mb-1">
+      <span className="text-sm sm:text-base font-semibold mb-1 leading-tight">
         {slot.time}
       </span>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-center gap-1">
         <IconComponent
-          className={cn("h-3 w-3", display.iconColor)}
+          className={cn("h-4 w-4", display.iconColor)}
         />
         <span
           className={cn(
-            "text-xs hidden sm:inline",
+            "text-xs sm:text-sm font-medium",
             display.textColor
           )}
         >

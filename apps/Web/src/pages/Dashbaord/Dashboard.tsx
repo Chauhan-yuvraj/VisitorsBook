@@ -7,6 +7,7 @@ import { RecentActivity } from "@/components/Dashboard/RecentActivity";
 import { useDashboardData } from "@/hooks/Dashboard/useDashboardData";
 import { Calendar } from "@/components/ui/calendar";
 import { TimeSlots, type TimeSlot } from "@/components/ui/TimeSlots";
+import MeetingModal from "@/components/Meeting/MeetingModal";
 import React from "react";
 import { useSelector } from "react-redux";
 import { availabilityService } from "@/services/availability.service";
@@ -100,6 +101,7 @@ const Dashboard = () => {
   const [selectedSlot, setSelectedSlot] = React.useState<string | undefined>();
   const [availabilityData, setAvailabilityData] = React.useState<any[]>([]);
   const [slotsData, setSlotsData] = React.useState<TimeSlot[]>([]);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = React.useState(false);
   const { user } = useSelector((state: RootState) => state.auth);
 
   // Load availability when date changes
@@ -197,12 +199,18 @@ const Dashboard = () => {
 
       // Update/create the remaining unavailable slots
       if (availabilitySlots.length > 0) {
-        await availabilityService.updateAvailability(user._id, availabilitySlots);
+        await availabilityService.updateAvailability(
+          user._id,
+          availabilitySlots
+        );
       }
 
       // Refresh availability data after updates
       const dateString = date.toISOString().split("T")[0];
-      const response = await availabilityService.getAvailability(user._id, dateString);
+      const response = await availabilityService.getAvailability(
+        user._id,
+        dateString
+      );
       if (response.success && response.data) {
         setAvailabilityData(response.data);
       } else {
@@ -236,6 +244,9 @@ const Dashboard = () => {
         <div className="flex gap-2">
           <Button asChild variant="outline">
             <Link to="/dashboard/visits">Schedule Visit</Link>
+          </Button>
+          <Button variant="outline" onClick={() => setIsMeetingModalOpen(true)}>
+            Schedule Meeting
           </Button>
           <Button asChild>
             <Link to="/dashboard/deliveries">Record Delivery</Link>
@@ -336,9 +347,12 @@ const Dashboard = () => {
         <RecentActivity activities={recentActivity} />
       </div>
 
-      {/* Calendar and Time Slots - side by side */}
+      {/* Meeting Modal */}
+      <MeetingModal
+        isOpen={isMeetingModalOpen}
+        onClose={() => setIsMeetingModalOpen(false)}
+      />
     </div>
   );
 };
-
 export default Dashboard;

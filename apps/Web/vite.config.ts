@@ -12,5 +12,6 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "@repo/types": path.resolve(__dirname, "../../packages/types/src/index.ts"),
     },
+    extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
   },
 })

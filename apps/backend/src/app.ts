@@ -9,6 +9,7 @@ import deliveryRoutes from "./routes/Delivery.routes"
 import departmentRoutes from "./routes/department.routes"
 import projectRoutes from "./routes/project.routes"
 import availabilityRoutes from "./routes/availability.routes"
+import meetingRoutes from "./routes/meeting.routes"
 import cookieParser from "cookie-parser";
 
 
@@ -57,8 +58,10 @@ app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/availability', availabilityRoutes);
+app.use('/api/meetings', meetingRoutes);
 
 console.log("Availability routes registered at /api/availability");
+console.log("Meeting routes registered at /api/meetings");
 
 
 export default app;
