@@ -21,7 +21,7 @@ export const useEmployeeForm = ({ employeeToEdit, isOpen, onClose }: UseEmployee
     name: "",
     email: "",
     phone: "",
-    departmentId: "",
+    departmentIds: [] as string[],
     jobTitle: "",
     role: UserRole.EMPLOYEE as string,
     status: "Active",
@@ -42,11 +42,23 @@ export const useEmployeeForm = ({ employeeToEdit, isOpen, onClose }: UseEmployee
 
   useEffect(() => {
     if (employeeToEdit) {
+      const deptIds: string[] = [];
+      if (Array.isArray(employeeToEdit.departments)) {
+        employeeToEdit.departments.forEach(dept => {
+          if (typeof dept === 'string') {
+            deptIds.push(dept);
+          } else if (dept && dept._id) {
+            deptIds.push(dept._id);
+          }
+        });
+      } else if (employeeToEdit.departments && typeof employeeToEdit.departments === 'object' && 'departments' in employeeToEdit.departments) {
+        // This shouldn't happen based on types, but just in case
+      }
       setFormData({
         name: employeeToEdit.name || "",
         email: employeeToEdit.email || "",
         phone: employeeToEdit.phone || "",
-        departmentId: typeof employeeToEdit.departmentId === 'object' ? employeeToEdit.departmentId?._id || "" : employeeToEdit.departmentId || "",
+        departmentIds: deptIds,
         jobTitle: employeeToEdit.jobTitle || "",
         role: employeeToEdit.role || UserRole.EMPLOYEE,
         status: employeeToEdit.isActive ? "Active" : "Inactive",
@@ -56,7 +68,7 @@ export const useEmployeeForm = ({ employeeToEdit, isOpen, onClose }: UseEmployee
         name: "",
         email: "",
         phone: "",
-        departmentId: "",
+        departmentIds: [],
         jobTitle: "",
         role: UserRole.EMPLOYEE,
         status: "Active",
@@ -76,8 +88,8 @@ export const useEmployeeForm = ({ employeeToEdit, isOpen, onClose }: UseEmployee
   const handleRoleChange = (value: string) => {
     setFormData((prev) => ({ ...prev, role: value as UserRole }));
   };
-  const handleDepartmentChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, departmentId: value }));
+  const handleDepartmentChange = (value: string[]) => {
+    setFormData((prev) => ({ ...prev, departmentIds: value }));
   };
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -93,7 +105,7 @@ export const useEmployeeForm = ({ employeeToEdit, isOpen, onClose }: UseEmployee
       submitData.append("name", formData.name);
       submitData.append("email", formData.email);
       submitData.append("phone", formData.phone);
-      submitData.append("departmentId", formData.departmentId);
+      formData.departmentIds.forEach(id => submitData.append("departments", id));
       submitData.append("jobTitle", formData.jobTitle);
       submitData.append("role", formData.role);
       submitData.append("isActive", String(formData.status === "Active"));

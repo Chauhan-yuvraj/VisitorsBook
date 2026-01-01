@@ -2,6 +2,7 @@ import Modal from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { MultiSelect } from "@/components/ui/multi-select";
 import {
   Select,
   SelectContent,
@@ -113,22 +114,16 @@ export default function EmployeeModal({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="department">Department</Label>
-            <Select
-              value={formData.departmentId}
-              onValueChange={handleDepartmentChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Department" />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept._id} value={dept._id || ""}>
-                    {dept.departmentName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="department">Departments</Label>
+            <MultiSelect
+              options={departments.map((dept) => ({
+                value: dept._id || "",
+                label: dept.departmentName,
+              }))}
+              value={formData.departmentIds}
+              onChange={handleDepartmentChange}
+              placeholder="Select Departments"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="jobTitle">Job Title</Label>

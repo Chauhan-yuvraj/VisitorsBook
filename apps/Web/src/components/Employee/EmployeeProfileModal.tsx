@@ -97,7 +97,13 @@ export default function EmployeeProfileModal({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Department</p>
-              <p className="text-sm font-medium">{(employee as any).departmentId?.departmentName || "N/A"}</p>
+              <p className="text-sm font-medium">
+                {Array.isArray(employee.departments) && employee.departments.length > 0
+                  ? employee.departments.map(dept => 
+                      typeof dept === 'object' && dept.departmentName ? dept.departmentName : dept
+                    ).join(', ')
+                  : "N/A"}
+              </p>
             </div>
           </div>
 

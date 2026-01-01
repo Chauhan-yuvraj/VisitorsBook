@@ -7,7 +7,10 @@ interface EmployeeGridProps {
   onEmployeeClick: (employee: Employee) => void;
 }
 
-export const EmployeeGrid: React.FC<EmployeeGridProps> = ({ employees, onEmployeeClick }) => {
+export const EmployeeGrid: React.FC<EmployeeGridProps> = ({
+  employees,
+  onEmployeeClick,
+}) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {employees.map((employee) => (
@@ -27,15 +30,33 @@ export const EmployeeGrid: React.FC<EmployeeGridProps> = ({ employees, onEmploye
               <User className="h-10 w-10 text-muted-foreground" />
             )}
           </div>
-          <h3 className="font-semibold text-lg text-center">
-            {employee.name}
-          </h3>
+          <h3 className="font-semibold text-lg text-center">{employee.name}</h3>
           <p className="text-sm text-muted-foreground text-center mb-1">
             {employee.jobTitle}
           </p>
-          <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
-            {(employee as any).departmentId?.departmentName || "General"}
-          </span>
+          <div className="flex justify-center flex-wrap gap-2">
+            {Array.isArray(employee.departments) &&
+            employee.departments.length > 0 ? (
+              employee.departments.map((dept, index) => {
+                const label: string =
+                  typeof dept === "string" ? dept : dept.departmentName;
+
+                return (
+                  <span
+                    key={index}
+                    className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold
+                     transition-colors focus:outline-none focus:ring-2 focus:ring-ring
+                     focus:ring-offset-2 border-transparent bg-secondary
+                     text-secondary-foreground hover:bg-secondary/80"
+                  >
+                    {label}
+                  </span>
+                );
+              })
+            ) : (
+              <span className="text-xs text-muted-foreground">N/A</span>
+            )}
+          </div>
         </div>
       ))}
     </div>

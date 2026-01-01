@@ -11,7 +11,7 @@ export interface IEmployee {
   name: string;
   email: string;
   phone?: string;
-  departmentId?: string | { _id: string; departmentName: string };
+  departments?: string[] | { _id: string; departmentName: string }[];
   jobTitle: string;
   role: UserRole;
   isActive: boolean;
