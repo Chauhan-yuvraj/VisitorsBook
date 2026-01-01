@@ -22,6 +22,7 @@ app.use(cookieParser());
 const allowedOrigins = [
     'http://localhost:5173',        // web (Vite)
     'http://localhost:5174',        // web (Vite)
+    'http://localhost:5175',        // web (Vite)
     'http://localhost:19006',       // Expo dev
     'exp://localhost:19000',        // Expo Go
     'http://10.0.2.2:3000',         // Android emulator

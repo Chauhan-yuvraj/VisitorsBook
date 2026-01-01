@@ -2,7 +2,7 @@ import { Meeting, IMeeting } from "../models/meeting.model";
 import { MeetingAvailabilityLog } from "../models/meetingAvailabilityLog.model";
 import { Availability } from "../models/availability.model";
 import { Schedule } from "../models/schedules.model";
-import { MeetingTimeSlot } from "@repo/types";
+import { MeetingTimeSlot, UserRole, ROLE_PERMISSIONS } from "@repo/types";
 import mongoose from "mongoose";
 
 export interface AvailabilityCheckResult {
@@ -230,15 +230,44 @@ export class MeetingService {
     }
   }
 
-  // Get meetings for a user
-  static async getUserMeetings(userId: string): Promise<IMeeting[]> {
-    return await Meeting.find({
-      $or: [{ organizer: userId }, { host: userId }, { participants: userId }],
-      status: { $ne: "cancelled" },
-    })
+  // Get meetings for a user based on their role and permissions
+  static async getUserMeetings(userId: string, userRole?: UserRole, userDepartments?: string[]): Promise<IMeeting[]> {
+    let query: any = { status: { $ne: "cancelled" } };
+
+    if (!userRole) {
+      // If no role provided, fall back to direct involvement
+      query.$or = [
+        { organizer: userId },
+        { host: userId },
+        { participants: userId }
+      ];
+    } else {
+      const userPermissions = ROLE_PERMISSIONS[userRole] || [];
+
+      if (userPermissions.includes('view_all_meetings')) {
+        // Admin and HR can see all meetings
+        query = { status: { $ne: "cancelled" } };
+      } else if (userPermissions.includes('view_department_meetings')) {
+        // Managers and employees can see meetings based on scope
+        query = {
+          status: { $ne: "cancelled" },
+          $or: [
+            { scope: 'general' }, // All general meetings
+            { scope: 'departments', departments: { $in: userDepartments || [] } } // Department-specific meetings
+            // Note: 'separate' meetings are only visible to admins/HR, not included here
+          ]
+        };
+      } else {
+        // No permissions, return empty array
+        return [];
+      }
+    }
+
+    return await Meeting.find(query)
       .populate("organizer", "name email")
       .populate("host", "name email")
       .populate("participants", "name email")
+      .populate("departments", "departmentName")
       .sort({ createdAt: -1 });
   }
 

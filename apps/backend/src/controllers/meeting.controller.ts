@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { MeetingService } from "../services/meeting.service";
 import { Meeting } from "../models/meeting.model";
 import { ROLE_PERMISSIONS, UserRole } from "@repo/types";
+import mongoose from "mongoose";
 
 export class MeetingController {
   // Get all meetings with permission-based filtering
@@ -10,21 +11,20 @@ export class MeetingController {
       const user = (req as any).user;
       const userPermissions = ROLE_PERMISSIONS[user?.role as UserRole] || [];
 
-      let query = {};
+      let query: any = { status: { $ne: 'cancelled' } };
 
-      // Filter based on permissions
+      // Filter based on permissions and meeting scope
       if (userPermissions.includes('view_all_meetings')) {
         // Admin and HR can see all meetings
-        query = {};
+        query = { status: { $ne: 'cancelled' } };
       } else if (userPermissions.includes('view_department_meetings')) {
-        // Managers and employees can only see meetings related to their departments
+        // Managers and employees can see meetings based on scope
         query = {
+          status: { $ne: 'cancelled' },
           $or: [
-            { organizer: user._id },
-            { host: user._id },
-            { participants: user._id },
-            // For department filtering, we need to check if any participant/host/organizer is in the same department
-            // This is complex, so for now we'll show meetings where the user is directly involved
+            { scope: 'general' }, // All general meetings
+            { scope: 'departments', departments: { $in: user.departments || [] } } // Department-specific meetings
+            // Note: 'separate' meetings are only visible to admins/HR
           ]
         };
       } else {
@@ -38,6 +38,7 @@ export class MeetingController {
         .populate('organizer', 'name email departments')
         .populate('host', 'name email departments')
         .populate('participants', 'name email departments')
+        .populate('departments', 'departmentName')
         .sort({ createdAt: -1 });
 
       res.json({
@@ -61,6 +62,8 @@ export class MeetingController {
         organizer,
         host,
         participants,
+        scope,
+        departments,
         title,
         agenda,
         location,
@@ -79,28 +82,58 @@ export class MeetingController {
       }
 
       // Validate required fields
-      if (!organizer || !host || !participants || !title || !timeSlots || timeSlots.length === 0) {
+      if (!organizer || !host || !participants || !scope || !title || !timeSlots || timeSlots.length === 0) {
         return res.status(400).json({
           success: false,
           message: "Missing required fields"
         });
       }
 
+      // Validate meeting scope
+      if (!['general', 'departments', 'separate'].includes(scope)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid meeting scope. Must be 'general', 'departments', or 'separate'"
+        });
+      }
+
+      // Validate departments if scope is 'departments'
+      if (scope === 'departments' && (!departments || departments.length === 0)) {
+        return res.status(400).json({
+          success: false,
+          message: "Departments are required when scope is 'departments'"
+        });
+      }
+
+      // Clear departments if scope is not 'departments'
+      const finalDepartments = scope === 'departments' ? departments : [];
+
       // Check availability first
       const availabilityResults = await MeetingService.checkAvailability(participants, timeSlots);
 
-      // Check if all participants are available for at least one time slot
-      const hasAvailableSlot = availabilityResults.some(slotResults =>
-        slotResults.every(result => result.status === 'available')
-      );
-
-      if (!hasAvailableSlot) {
-        // Return availability information
-        return res.status(409).json({
-          success: false,
-          message: "No suitable time slots available for all participants",
-          availabilityResults
-        });
+      // Find participants with conflicts
+      const participantsWithConflicts = [];
+      for (let slotIndex = 0; slotIndex < availabilityResults.length; slotIndex++) {
+        const slotResults = availabilityResults[slotIndex];
+        for (const result of slotResults) {
+          if (result.status !== 'available') {
+            // Get user details for the conflict
+            const employee = await mongoose.model('Employee').findById(result.employeeId);
+            if (employee) {
+              participantsWithConflicts.push({
+                userId: result.employeeId,
+                userName: employee.name,
+                isAvailable: false,
+                reason: result.reason,
+                conflictingMeeting: result.conflictingMeetingId ? {
+                  title: 'Existing meeting',
+                  startTime: 'Check availability logs',
+                  endTime: 'Check availability logs'
+                } : undefined
+              });
+            }
+          }
+        }
       }
 
       // Create the meeting
@@ -108,6 +141,8 @@ export class MeetingController {
         organizer,
         host,
         participants,
+        scope,
+        departments: finalDepartments,
         title,
         agenda,
         location,
@@ -119,7 +154,8 @@ export class MeetingController {
       res.status(201).json({
         success: true,
         data: meeting,
-        availabilityLogs
+        availabilityLogs,
+        conflicts: participantsWithConflicts.length > 0 ? participantsWithConflicts : undefined
       });
 
     } catch (error: any) {
@@ -167,6 +203,7 @@ export class MeetingController {
   static async getUserMeetings(req: Request, res: Response) {
     try {
       const { userId } = req.params;
+      const requestingUser = (req as any).user;
 
       if (!userId) {
         return res.status(400).json({
@@ -175,7 +212,22 @@ export class MeetingController {
         });
       }
 
-      const meetings = await MeetingService.getUserMeetings(userId);
+      // Get user permissions
+      const userPermissions = ROLE_PERMISSIONS[requestingUser?.role as UserRole] || [];
+
+      // Check if user can view meetings
+      if (!userPermissions.includes('view_all_meetings') && !userPermissions.includes('view_department_meetings')) {
+        return res.status(403).json({
+          success: false,
+          message: "You do not have permission to view meetings"
+        });
+      }
+
+      const meetings = await MeetingService.getUserMeetings(
+        userId,
+        requestingUser?.role as UserRole,
+        requestingUser?.departments
+      );
 
       res.json({
         success: true,
@@ -228,23 +280,15 @@ export class MeetingController {
       const { meetingId } = req.params;
       const updateData = req.body;
 
-      // Check permissions
-      const userPermissions = ROLE_PERMISSIONS[(req as any).user?.role as UserRole] || [];
-      if (!userPermissions.includes('create_meetings')) {
-        return res.status(403).json({
-          success: false,
-          message: "You do not have permission to update meetings"
-        });
-      }
-
       const meeting = await Meeting.findByIdAndUpdate(
         meetingId,
         { ...updateData, updatedAt: new Date() },
         { new: true }
       )
-      .populate('organizer', 'name email')
-      .populate('host', 'name email')
-      .populate('participants', 'name email');
+        .populate('organizer', 'name email')
+        .populate('host', 'name email')
+        .populate('participants', 'name email')
+        .populate('departments', 'departmentName');
 
       if (!meeting) {
         return res.status(404).json({
@@ -273,15 +317,6 @@ export class MeetingController {
       const { meetingId } = req.params;
       const { timeSlots, forceSchedule = false } = req.body;
 
-      // Check permissions
-      const userRole = (req as any).user?.role;
-      if (!userRole || !['manager', 'admin'].includes(userRole)) {
-        return res.status(403).json({
-          success: false,
-          message: "Only managers and administrators can update meeting time slots"
-        });
-      }
-
       const { meeting, availabilityLogs } = await MeetingService.updateMeetingTimeSlots(
         meetingId,
         timeSlots,
@@ -307,15 +342,6 @@ export class MeetingController {
   static async deleteMeeting(req: Request, res: Response) {
     try {
       const { meetingId } = req.params;
-
-      // Check permissions
-      const userPermissions = ROLE_PERMISSIONS[(req as any).user?.role as UserRole] || [];
-      if (!userPermissions.includes('create_meetings')) {
-        return res.status(403).json({
-          success: false,
-          message: "You do not have permission to delete meetings"
-        });
-      }
 
       const meeting = await Meeting.findByIdAndUpdate(
         meetingId,

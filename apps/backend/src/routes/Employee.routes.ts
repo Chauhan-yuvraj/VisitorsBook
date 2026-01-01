@@ -9,53 +9,66 @@ import {
   UpdateMe,
   GetActiveHostList,
   BulkImportEmployees,
-  ToggleEmployeeStatus
+  ToggleEmployeeStatus,
 } from "../controllers/Employee.controller";
 import { checkPermission, protect } from "../middleware/auth.middleware";
 import { upload } from "../middleware/multer.middleware";
 
 const router = Router();
 
-router.get("/me", protect, GetMe)
-router.patch("/me", protect, upload.single('profileImg'), UpdateMe)
+router.get("/me", protect, GetMe);
+router.patch("/me", protect, upload.single("profileImg"), UpdateMe);
 
-// 2. For lightweight Kiosk Dropdown (Name, Avatar, ID only)  
-router.get("/active-list", protect, checkPermission('manage_employees'), GetActiveHostList);
+// 2. For lightweight Kiosk Dropdown (Name, Avatar, ID only)
+router.get(
+  "/active-list",
+  protect,
+  checkPermission("manage_employees"),
+  GetActiveHostList
+);
 
 // 3. For onboarding (CSV Import)
-router.post("/import", protect, checkPermission('manage_employees'), BulkImportEmployees);
+router.post(
+  "/import",
+  protect,
+  checkPermission("manage_employees"),
+  BulkImportEmployees
+);
 
 router
   .route("/")
 
   .get(
     protect,
-    checkPermission('manage_employees'),
-    GetEmployees)
+    checkPermission("manage_employees", "view_employee"),
+    GetEmployees
+  )
 
   .post(
     protect,
-    checkPermission('manage_employees'),
-    upload.single('profileImg'), PostEmployee);
+    checkPermission("manage_employees"),
+    upload.single("profileImg"),
+    PostEmployee
+  );
 
 router
   .route("/:id")
-  .get(
-    protect,
-    checkPermission('manage_employees'),
-    GetEmployee)
+  .get(protect, checkPermission("manage_employees"), GetEmployee)
 
   .patch(
     protect,
-    checkPermission('manage_employees'),
-    upload.single('profileImg'),
-    UpdateEmployee) // Update employee
+    checkPermission("manage_employees"),
+    upload.single("profileImg"),
+    UpdateEmployee
+  ) // Update employee
 
-  .delete(
-    protect,
-    checkPermission('manage_employees'),
-    DeleteEmployee); // Delete employee
+  .delete(protect, checkPermission("manage_employees"), DeleteEmployee); // Delete employee
 
-router.patch("/:id/toggle-status", protect, checkPermission('manage_employees'), ToggleEmployeeStatus);
+router.patch(
+  "/:id/toggle-status",
+  protect,
+  checkPermission("manage_employees"),
+  ToggleEmployeeStatus
+);
 
 export default router;

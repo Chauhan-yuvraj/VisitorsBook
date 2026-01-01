@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useMeetings } from "@/hooks/useMeetings";
 import MeetingModal from "@/components/Meeting/MeetingModal";
+import MeetingDetailModal from "@/components/Meeting/MeetingDetailModal";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PageControls } from "@/components/ui/PageControls";
 import { MeetingsGrid } from "@/components/Meeting/MeetingsGrid";
@@ -24,6 +25,8 @@ export default function Meetings() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [meetingToEdit, setMeetingToEdit] = useState<Meeting | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -40,6 +43,16 @@ export default function Meetings() {
     if (user?._id) {
       await fetchMeetings(user._id);
     }
+  };
+
+  const handleCardClick = (meeting: Meeting) => {
+    setSelectedMeeting(meeting);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleDetailModalClose = () => {
+    setIsDetailModalOpen(false);
+    setSelectedMeeting(null);
   };
 
   const openDeleteAlert = (id: string) => {
@@ -84,6 +97,12 @@ export default function Meetings() {
         meetingToEdit={meetingToEdit}
       />
 
+      <MeetingDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleDetailModalClose}
+        meeting={selectedMeeting}
+      />
+
       <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -117,6 +136,7 @@ export default function Meetings() {
           meetings={filteredMeetings}
           onEdit={handleEdit}
           onDelete={openDeleteAlert}
+          onCardClick={handleCardClick}
         />
       )}
     </div>

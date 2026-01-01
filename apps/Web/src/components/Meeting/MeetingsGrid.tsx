@@ -1,56 +1,79 @@
 import React from "react";
-import { Calendar, Clock, Users, MapPin, Video, Trash2, Edit } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Users,
+  MapPin,
+  Video,
+  Trash2,
+  Edit,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { Meeting } from "@/types/meeting";
+import { PermissionGuard } from "../auth/PermissionGuard";
 
 interface MeetingsGridProps {
   meetings: Meeting[];
   onEdit?: (meeting: Meeting) => void;
   onDelete?: (id: string) => void;
+  onCardClick?: (meeting: Meeting) => void;
 }
 
 export const MeetingsGrid: React.FC<MeetingsGridProps> = ({
   meetings,
   onEdit,
   onDelete,
+  onCardClick,
 }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
     });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled':
-        return 'bg-blue-100 text-blue-800';
-      case 'ongoing':
-        return 'bg-green-100 text-green-800';
-      case 'completed':
-        return 'bg-gray-100 text-gray-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case "scheduled":
+        return "bg-blue-100 text-blue-800";
+      case "ongoing":
+        return "bg-green-100 text-green-800";
+      case "completed":
+        return "bg-gray-100 text-gray-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  // Filter and sort meetings - show upcoming first, then past
+  const getParticipantNames = (participants: any[] | undefined) => {
+    if (!Array.isArray(participants)) return [];
+
+    return participants
+      .map((p) => {
+        if (typeof p === "string") return p;
+        if (typeof p === "object" && p !== null)
+          return p.name || p.fullName || p.email;
+        return null;
+      })
+      .filter(Boolean) as string[];
+  };
+
   const sortedMeetings = [...meetings].sort((a, b) => {
     if (!a.timeSlots || a.timeSlots.length === 0) return 1;
     if (!b.timeSlots || b.timeSlots.length === 0) return -1;
-    
+
     const aTime = new Date(a.timeSlots[0].startTime).getTime();
     const bTime = new Date(b.timeSlots[0].startTime).getTime();
     return aTime - bTime;
@@ -74,32 +97,36 @@ export const MeetingsGrid: React.FC<MeetingsGridProps> = ({
 
         const startTime = new Date(firstSlot.startTime);
         const isUpcoming = startTime >= new Date();
-
-        // Handle populated participants (could be object or string)
-        const participantCount = Array.isArray(meeting.participants) 
-          ? meeting.participants.length 
-          : 0;
+        const participantNames = getParticipantNames(meeting.participants);
 
         return (
-          <div 
-            key={meeting._id} 
-            className={`bg-card text-card-foreground rounded-xl border shadow-sm p-6 ${
-              isUpcoming ? 'border-primary/20' : 'opacity-75'
+          <div
+            key={meeting._id}
+            className={`bg-card text-card-foreground rounded-xl border shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow ${
+              isUpcoming ? "border-primary/20" : "opacity-75"
             }`}
+            onClick={() => onCardClick?.(meeting)}
           >
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg mb-1 truncate">{meeting.title}</h3>
+                <h3 className="font-semibold text-lg mb-1 truncate">
+                  {meeting.title}
+                </h3>
                 {meeting.agenda && (
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {meeting.agenda}
                   </p>
                 )}
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ml-2 shrink-0 ${getStatusColor(meeting.status)}`}>
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ml-2 shrink-0 ${getStatusColor(
+                  meeting.status
+                )}`}
+              >
                 {meeting.status.toUpperCase()}
               </span>
             </div>
+
             <div className="space-y-2 text-sm mb-4">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="h-4 w-4 shrink-0" />
@@ -109,7 +136,8 @@ export const MeetingsGrid: React.FC<MeetingsGridProps> = ({
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-4 w-4 shrink-0" />
                 <span>
-                  {formatTime(firstSlot.startTime)} - {formatTime(firstSlot.endTime)}
+                  {formatTime(firstSlot.startTime)} –{" "}
+                  {formatTime(firstSlot.endTime)}
                 </span>
               </div>
 
@@ -124,12 +152,15 @@ export const MeetingsGrid: React.FC<MeetingsGridProps> = ({
                 </div>
               )}
 
-              {participantCount > 0 && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Users className="h-4 w-4 shrink-0" />
-                  <span>
-                    {participantCount} {participantCount === 1 ? 'participant' : 'participants'}
-                  </span>
+              {participantNames.length > 0 && (
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <Users className="h-4 w-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium">Participants</p>
+                    <p className="text-sm line-clamp-2">
+                      {participantNames.join(", ")}
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -143,33 +174,45 @@ export const MeetingsGrid: React.FC<MeetingsGridProps> = ({
               )}
             </div>
 
-            <div className="mt-4 flex justify-end gap-2">
-              {onEdit && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2"
-                  onClick={() => onEdit(meeting)}
-                >
-                  <Edit className="h-4 w-4" />
-                  Edit
-                </Button>
-              )}
-              {onDelete && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => meeting._id && onDelete(meeting._id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <PermissionGuard
+              permission={[
+                "edit_all_meetings",
+                "edit_department_meetings",
+              ]}
+            >
+              <div className="mt-4 flex justify-end gap-2">
+                {onEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(meeting);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      meeting._id && onDelete(meeting._id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </PermissionGuard>
           </div>
         );
       })}
     </div>
   );
 };
-

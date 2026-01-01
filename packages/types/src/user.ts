@@ -11,6 +11,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'manage_employees',
     'view_all_meetings',
     'create_meetings',
+    'edit_all_meetings',
     'view_all_visits',
     'create_visits',
     'view_all_visitors',
@@ -25,6 +26,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'manage_employees',
     'view_all_meetings',
     'create_meetings',
+    'edit_all_meetings',
     'view_all_visits',
     'create_visits',
     'view_all_visitors',
@@ -35,22 +37,24 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'manage_records'
   ],
   [UserRole.MANAGER]: [
-    'view_department_meetings',
+    'view_department_meetings', // Can see general meetings and self department meetings
     'create_meetings',
+    'edit_department_meetings', // Can edit meetings in their departments
     'view_department_visits',
     'create_visits',
     'view_department_visitors',
     'create_visitors',
     'view_all_deliveries',
     'create_deliveries',
-    'manage_projects'
+    'manage_projects',
+    'view_employee'
   ],
   [UserRole.EMPLOYEE]: [
     'view_department_meetings',
     'view_department_visits',
-    'view_department_visitors',
     'view_all_deliveries',
-    'create_deliveries'
+    'create_deliveries',
+    'view_employee'
   ]
 };
 
@@ -106,6 +110,7 @@ export interface Visitor {
     notes?: string;
     organizationId?: string;
     companyNameFallback?: string;
+    departments: string[];
     createdAt?: string;
     updatedAt?: string;
 }

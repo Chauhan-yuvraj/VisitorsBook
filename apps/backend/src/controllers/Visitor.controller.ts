@@ -23,9 +23,18 @@ export const GetVisitors = async (req: Request, res: Response) => {
             });
         }
 
-        // For now, allow all users with permission to see all visitors
-        // In the future, we could implement department-based filtering for visitors
-        const visitors = await Visitor.find().sort({ createdAt: -1 });
+        let query = {};
+        if (userPermissions.includes('view_department_visitors') && !userPermissions.includes('view_all_visitors')) {
+            // Manager: filter by departments
+            const userDepartments = user.departments || [];
+            const departmentIds = userDepartments.map((dept: any) => 
+                typeof dept === 'string' ? dept : dept._id
+            );
+            query = { departments: { $in: departmentIds } };
+        }
+        // For admin/HR with view_all_visitors, no filter (query = {})
+
+        const visitors = await Visitor.find(query).sort({ createdAt: -1 });
         res.status(200).json({
             success: true,
             count: visitors.length,
@@ -88,7 +97,8 @@ export const PostVisitor = async (req: Request, res: Response) => {
             isBlocked,
             notes,
             organizationId,
-            companyNameFallback
+            companyNameFallback,
+            departments
         } = req.body;
 
         if (!name) {
@@ -109,7 +119,8 @@ export const PostVisitor = async (req: Request, res: Response) => {
             isBlocked: isBlocked === 'true' || isBlocked === true,
             notes,
             organizationId,
-            companyNameFallback
+            companyNameFallback,
+            departments: departments ? (Array.isArray(departments) ? departments : [departments]) : []
         });
 
         res.status(201).json({
@@ -142,7 +153,7 @@ export const UpdateVisitor = async (req: Request, res: Response) => {
         const allowedUpdates = [
             'name', 'email', 'phone', 'profileImgUri', 
             'isVip', 'isBlocked', 'notes', 
-            'organizationId', 'companyNameFallback'
+            'organizationId', 'companyNameFallback', 'departments'
         ];
 
         const updates: Record<string, any> = {};

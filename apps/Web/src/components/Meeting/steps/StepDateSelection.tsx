@@ -15,7 +15,7 @@ export const StepDateSelection: React.FC<StepDateSelectionProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold">Step 4: Date Selection</h3>
+        <h3 className="text-lg font-semibold">Step 5: Date Selection</h3>
         <p className="text-sm text-muted-foreground mt-1">
           Choose a date for your meeting.
         </p>

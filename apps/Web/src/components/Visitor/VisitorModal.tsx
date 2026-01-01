@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/Textarea";
+import { MultiSelect } from "@/components/ui/multi-select";
 import type { Visitor } from "@/types/visitor";
 import { useVisitorForm } from "@/hooks/useVisitorForm";
 
@@ -21,8 +22,10 @@ export default function VisitorModal({
     formData,
     isLoading,
     selectedFile,
+    departments,
     handleChange,
     handleCheckboxChange,
+    handleDepartmentsChange,
     handleFileChange,
     handleSubmit,
   } = useVisitorForm({ visitorToEdit, onClose, isOpen });
@@ -99,6 +102,16 @@ export default function VisitorModal({
               placeholder="Company Name"
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Departments</Label>
+          <MultiSelect
+            options={departments.filter(dept => dept._id).map(dept => ({ value: dept._id!, label: dept.departmentName }))}
+            value={formData.departments}
+            onChange={handleDepartmentsChange}
+            placeholder="Select departments..."
+          />
         </div>
 
         <div className="space-y-2">

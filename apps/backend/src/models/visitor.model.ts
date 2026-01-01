@@ -26,6 +26,7 @@ const visitorSchema = new Schema(
       default: null,
     },
     companyNameFallback: { type: String },
+    departments: [{ type: Schema.Types.ObjectId, ref: "Department" }],
   },
   {
     timestamps: true,

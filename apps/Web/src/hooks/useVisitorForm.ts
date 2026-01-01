@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { addVisitor, updateVisitor } from "@/store/slices/visitorSlice";
 import type { Visitor } from "@/types/visitor";
+import { getDepartments } from "@/services/department.service";
+import type { IDepartment } from "@repo/types";
 
 interface UseVisitorFormProps {
   visitorToEdit?: Visitor | null;
@@ -13,6 +15,7 @@ export const useVisitorForm = ({ visitorToEdit, onClose, isOpen }: UseVisitorFor
   const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -21,7 +24,21 @@ export const useVisitorForm = ({ visitorToEdit, onClose, isOpen }: UseVisitorFor
     notes: "",
     isVip: false,
     isBlocked: false,
+    departments: [] as string[],
   });
+
+  const fetchDepartments = async () => {
+    try {
+      const deps = await getDepartments();
+      setDepartments(deps);
+    } catch (error) {
+      console.error("Failed to fetch departments:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
 
   useEffect(() => {
     if (visitorToEdit) {
@@ -33,6 +50,7 @@ export const useVisitorForm = ({ visitorToEdit, onClose, isOpen }: UseVisitorFor
         notes: visitorToEdit.notes || "",
         isVip: visitorToEdit.isVip || false,
         isBlocked: visitorToEdit.isBlocked || false,
+        departments: visitorToEdit.departments || [],
       });
     } else {
       setFormData({
@@ -43,6 +61,7 @@ export const useVisitorForm = ({ visitorToEdit, onClose, isOpen }: UseVisitorFor
         notes: "",
         isVip: false,
         isBlocked: false,
+        departments: [],
       });
     }
     setSelectedFile(null);
@@ -58,6 +77,10 @@ export const useVisitorForm = ({ visitorToEdit, onClose, isOpen }: UseVisitorFor
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setFormData((prev) => ({ ...prev, [name]: checked }));
+  };
+
+  const handleDepartmentsChange = (selectedDepartments: string[]) => {
+    setFormData((prev) => ({ ...prev, departments: selectedDepartments }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,6 +101,7 @@ export const useVisitorForm = ({ visitorToEdit, onClose, isOpen }: UseVisitorFor
       submitData.append("notes", formData.notes);
       submitData.append("isVip", String(formData.isVip));
       submitData.append("isBlocked", String(formData.isBlocked));
+      formData.departments.forEach(dept => submitData.append("departments", dept));
 
       if (selectedFile) {
         submitData.append("profileImg", selectedFile);
@@ -103,8 +127,10 @@ export const useVisitorForm = ({ visitorToEdit, onClose, isOpen }: UseVisitorFor
     formData,
     isLoading,
     selectedFile,
+    departments,
     handleChange,
     handleCheckboxChange,
+    handleDepartmentsChange,
     handleFileChange,
     handleSubmit,
   };

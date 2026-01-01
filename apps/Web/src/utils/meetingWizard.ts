@@ -12,16 +12,21 @@ export const validateMeetingWizardStep = (
 ): boolean => {
   switch (step) {
     case 1:
-      return formData.hostId !== "" && formData.participants.length > 0;
+      return (
+        (formData.scope === 'general' || formData.scope === 'departments' || formData.scope === 'separate') &&
+        (formData.scope === 'departments' ? formData.departments.length > 0 : true)
+      );
     case 2:
-      return formData.title.trim() !== "";
+      return formData.hostId !== "" && formData.participants.length > 0;
     case 3:
-      return formData.location.trim() !== "";
+      return formData.title.trim() !== "";
     case 4:
-      return selectedDate !== undefined;
+      return formData.location.trim() !== "";
     case 5:
-      return selectedSlots.length > 0;
+      return selectedDate !== undefined;
     case 6:
+      return selectedSlots.length > 0;
+    case 7:
       return true; // Review step always valid
     default:
       return false;
@@ -43,18 +48,22 @@ export const getStepValidationError = (
 
   switch (step) {
     case 1:
+      if (!formData.scope) return "Please select meeting scope.";
+      if (formData.scope === 'departments' && formData.departments.length === 0) return "Please select at least one department.";
+      return null;
+    case 2:
       if (!formData.hostId) return "Please select a host for the meeting.";
       if (formData.participants.length === 0) return "Please select at least one participant.";
       return null;
-    case 2:
-      return "Please enter a meeting title.";
     case 3:
-      return `Please enter the ${formData.isVirtual ? "meeting link" : "location"}.`;
+      return "Please enter a meeting title.";
     case 4:
-      return "Please select a date for the meeting.";
+      return `Please enter the ${formData.isVirtual ? "meeting link" : "location"}.`;
     case 5:
-      return "Please select at least one time slot.";
+      return "Please select a date for the meeting.";
     case 6:
+      return "Please select at least one time slot.";
+    case 7:
       return null;
     default:
       return null;

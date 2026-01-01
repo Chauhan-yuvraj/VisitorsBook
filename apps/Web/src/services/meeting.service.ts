@@ -1,14 +1,23 @@
-import type { Meeting, CreateMeetingRequest } from '@/types/meeting';
+import type { Meeting, CreateMeetingRequest, ParticipantAvailability } from '@repo/types';
 import api from './api';
 
 export const meetingService = {
   // Create a new meeting
-  createMeeting: async (meetingData: CreateMeetingRequest): Promise<{ success: boolean; data?: Meeting; message?: string }> => {
+  createMeeting: async (meetingData: CreateMeetingRequest): Promise<{
+    success: boolean;
+    data?: Meeting;
+    conflicts?: ParticipantAvailability[];
+    message?: string;
+  }> => {
     try {
       const response = await api.post('/meetings', meetingData);
-      // Backend returns { success: true, data: meeting, availabilityLogs }
+      // Backend returns { success: true, data: meeting, availabilityLogs, conflicts? }
       if (response.data.success && response.data.data) {
-        return { success: true, data: response.data.data };
+        return {
+          success: true,
+          data: response.data.data,
+          conflicts: response.data.conflicts
+        };
       }
       return { success: false, message: 'Failed to create meeting' };
     } catch (error: any) {

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { MeetingController } from "../controllers/meeting.controller";
-import { protect } from "../middleware/auth.middleware";
+import { protect, checkPermission, checkMeetingEditPermission } from "../middleware/auth.middleware";
 
 const router = Router();
 
@@ -23,16 +23,19 @@ router.get("/user/:userId", MeetingController.getUserMeetings);
 router.get("/:meetingId", MeetingController.getMeeting);
 
 // Update meeting
-router.put("/:meetingId", MeetingController.updateMeeting);
+router.put("/:meetingId", checkMeetingEditPermission, MeetingController.updateMeeting);
 
 // Update meeting time slots
-router.put("/:meetingId/timeslots", MeetingController.updateMeetingTimeSlots);
+router.put("/:meetingId/timeslots", checkMeetingEditPermission, MeetingController.updateMeetingTimeSlots);
 
 // Delete meeting
-router.delete("/:meetingId", MeetingController.deleteMeeting);
+router.delete("/:meetingId", checkMeetingEditPermission, MeetingController.deleteMeeting);
 
 // Get availability logs for a meeting
-router.get("/:meetingId/availability-logs", MeetingController.getMeetingAvailabilityLogs);
+router.get(
+  "/:meetingId/availability-logs",
+  MeetingController.getMeetingAvailabilityLogs
+);
 
 // Get available time slots
 router.get("/available-slots", MeetingController.getAvailableSlots);

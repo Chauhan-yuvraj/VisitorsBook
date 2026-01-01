@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { meetingService } from '@/services/meeting.service';
-import type { Meeting, CreateMeetingRequest } from '@/types/meeting';
+import type { Meeting, CreateMeetingRequest } from '@repo/types';
 
 export const useMeetings = (userId?: string) => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -35,14 +35,19 @@ export const useMeetings = (userId?: string) => {
   };
 
   // Create a new meeting
-  const createMeeting = async (meetingData: CreateMeetingRequest) => {
+  const createMeeting = async (meetingData: CreateMeetingRequest): Promise<{
+    success: boolean;
+    data?: Meeting;
+    conflicts?: any[];
+    message?: string;
+  }> => {
     setLoading(true);
     setError(null);
     try {
       const response = await meetingService.createMeeting(meetingData);
       if (response.success && response.data) {
         setMeetings(prev => [...prev, response.data!]);
-        return { success: true, data: response.data };
+        return { success: true, data: response.data, conflicts: response.conflicts };
       } else {
         setError(response.message || 'Failed to create meeting');
         return { success: false, message: response.message };

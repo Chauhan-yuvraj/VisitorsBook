@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useEmployees } from '@/hooks/useEmployees';
+import { useDepartments } from '@/hooks/useDepartments';
 import { useMeetings } from '@/hooks/useMeetings';
 import { isSlotInPast } from '@/utils/timeSlots';
-import type { Meeting, MeetingTimeSlot } from '@/types/meeting';
+import type { Meeting, MeetingTimeSlot, ParticipantAvailability } from '@repo/types';
 import type { RootState } from '@/store/store';
 import type { MeetingWizardStep, MeetingWizardFormData } from '@/constants/meetingWizard';
 import { validateMeetingWizardStep, canProceedToNextStep } from '@/utils/meetingWizard';
@@ -16,19 +17,24 @@ interface UseMeetingWizardProps {
 export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProps) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { employees } = useEmployees();
+  const { departments } = useDepartments();
   const { createMeeting, updateMeeting } = useMeetings();
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState<MeetingWizardStep>(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlots, setSelectedSlots] = useState<MeetingTimeSlot[]>([]);
+  const [conflicts, setConflicts] = useState<ParticipantAvailability[]>([]);
+  const [showConflictsModal, setShowConflictsModal] = useState(false);
 
   // Form data
   const [formData, setFormData] = useState<MeetingWizardFormData>({
     title: "",
     hostId: "",
     participants: [],
+    departments: [],
+    scope: 'general',
     location: "",
     isVirtual: false,
     agenda: "",
@@ -45,6 +51,8 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
           title: meetingToEdit.title || "",
           hostId: meetingToEdit.host || "",
           participants: meetingToEdit.participants || [],
+          departments: meetingToEdit.departments || [],
+          scope: meetingToEdit.scope || 'general',
           location: meetingToEdit.location || "",
           isVirtual: meetingToEdit.isVirtual || false,
           agenda: meetingToEdit.agenda || "",
@@ -61,13 +69,15 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
           title: "",
           hostId: user?._id || "",
           participants: [],
+          departments: [],
+          scope: 'general',
           location: "",
           isVirtual: false,
           agenda: "",
           remarks: "",
         });
         setSelectedSlots([]);
-        setSelectedDate(new Date());
+        setSelectedDate(undefined);
       }
     }
   }, [isOpen, meetingToEdit, user]);
@@ -94,6 +104,24 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
       participants: prev.participants.includes(participantId)
         ? prev.participants.filter(id => id !== participantId)
         : [...prev.participants, participantId]
+    }));
+  };
+
+  const handleDepartmentToggle = (departmentId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      departments: prev.departments.includes(departmentId)
+        ? prev.departments.filter(id => id !== departmentId)
+        : [...prev.departments, departmentId]
+    }));
+  };
+
+  const handleMeetingScopeChange = (scope: 'general' | 'departments' | 'separate') => {
+    setFormData(prev => ({
+      ...prev,
+      scope,
+      // Clear departments if scope is not 'departments'
+      departments: scope === 'departments' ? prev.departments : []
     }));
   };
 
@@ -148,7 +176,7 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
 
   // Navigation
   const handleNext = () => {
-    if (canProceedToNextStep(currentStep, formData, selectedDate, selectedSlots) && currentStep < 6) {
+    if (canProceedToNextStep(currentStep, formData, selectedDate, selectedSlots) && currentStep < 7) {
       setCurrentStep((prev) => (prev + 1) as MeetingWizardStep);
     }
   };
@@ -157,6 +185,20 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
     if (currentStep > 1) {
       setCurrentStep((prev) => (prev - 1) as MeetingWizardStep);
     }
+  };
+
+  const handleForceCreate = async () => {
+    // Force create the meeting (this would need a separate API endpoint)
+    // For now, just close the modal and consider it successful
+    setShowConflictsModal(false);
+    setConflicts([]);
+    // Note: In a real implementation, you'd call a force create API here
+    return { success: true, message: "Meeting created with conflicts noted" };
+  };
+
+  const handleCancelConflicts = () => {
+    setShowConflictsModal(false);
+    setConflicts([]);
   };
 
   // Validation
@@ -172,6 +214,8 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
         organizer: user._id,
         host: formData.hostId,
         participants: formData.participants,
+        scope: formData.scope,
+        departments: formData.scope === 'departments' ? formData.departments : [],
         title: formData.title,
         agenda: formData.agenda,
         location: formData.location,
@@ -187,7 +231,18 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
         result = await createMeeting(meetingData);
       }
 
-      return result;
+      if (result?.success) {
+        const resultWithConflicts = result as any; // Type assertion for conflicts
+        if (resultWithConflicts.conflicts && resultWithConflicts.conflicts.length > 0) {
+          // Show conflicts modal
+          setConflicts(resultWithConflicts.conflicts);
+          setShowConflictsModal(true);
+          return { success: true, data: result.data, hasConflicts: true };
+        }
+        return { success: true, data: result.data };
+      } else {
+        return { success: false, message: result?.message || "Failed to save meeting" };
+      }
     } catch (error) {
       console.error("Error saving meeting:", error);
       return { success: false, message: "Failed to save meeting" };
@@ -204,20 +259,27 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
     setSelectedDate,
     selectedSlots,
     formData,
+    conflicts,
+    showConflictsModal,
 
     // Derived state
     isCurrentStepValid,
     user,
     employees,
+    departments,
 
     // Handlers
     updateFormData,
     handleInputChange,
     handleSelectChange,
     handleParticipantToggle,
+    handleDepartmentToggle,
+    handleMeetingScopeChange,
     handleSlotSelect,
     handleNext,
     handleBack,
     handleSubmit,
+    handleForceCreate,
+    handleCancelConflicts,
   };
 };

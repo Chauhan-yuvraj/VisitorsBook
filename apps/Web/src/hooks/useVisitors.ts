@@ -2,10 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchVisitors, deleteVisitor } from "@/store/slices/visitorSlice";
 import type { Visitor } from "@/types/visitor";
+import { UserRole } from "@/types/user";
 
 export const useVisitors = () => {
   const dispatch = useAppDispatch();
   const { visitors, isLoading } = useAppSelector((state) => state.visitors);
+  const { user, role } = useAppSelector((state) => state.auth);
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,14 +43,31 @@ export const useVisitors = () => {
   };
 
   const filteredVisitors = useMemo(() => {
-    return visitors.filter(
+    let filtered = visitors.filter(
       (visitor) =>
         visitor &&
         (visitor.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           visitor.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           visitor.companyNameFallback?.toLowerCase().includes(searchQuery.toLowerCase()))
     );
-  }, [visitors, searchQuery]);
+
+    // Apply permission-based filtering
+    if (role === UserRole.MANAGER && user?.departments) {
+      const userDepartmentIds = Array.isArray(user.departments)
+        ? user.departments.map(dept => typeof dept === 'string' ? dept : dept._id)
+        : [];
+      filtered = filtered.filter(visitor =>
+        visitor.departments?.some(deptId => userDepartmentIds.includes(deptId))
+      );
+    }
+    // For ADMIN and HR, show all (no additional filtering)
+    // For EMPLOYEE, they shouldn't access this page, but if they do, show none
+    if (role === UserRole.EMPLOYEE) {
+      filtered = [];
+    }
+
+    return filtered;
+  }, [visitors, searchQuery, role, user]);
 
   return {
     visitors: filteredVisitors,
