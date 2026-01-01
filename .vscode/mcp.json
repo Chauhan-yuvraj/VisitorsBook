@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "MongoDB": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mongodb-mcp-server",
+        "--",
+        "--connectionString",
+        "mongodb+srv://yuvraj_db:Yuvraj2025%2A@cluster0.jhn6ipj.mongodb.net/visitors_book?retryWrites=true&w=majority",
+        "--readOnly"
+      ]
+    }
+  }
+}

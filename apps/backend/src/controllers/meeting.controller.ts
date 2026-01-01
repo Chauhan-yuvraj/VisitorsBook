@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { MeetingService } from "../services/meeting.service";
 import { Meeting } from "../models/meeting.model";
+import { Availability } from "../models/availability.model";
 import { ROLE_PERMISSIONS, UserRole } from "@repo/types";
 import mongoose from "mongoose";
 
@@ -109,7 +110,11 @@ export class MeetingController {
       const finalDepartments = scope === 'departments' ? departments : [];
 
       // Check availability first
-      const availabilityResults = await MeetingService.checkAvailability(participants, timeSlots);
+      const allAttendees = [...participants];
+      if (!allAttendees.includes(host)) {
+        allAttendees.push(host);
+      }
+      const availabilityResults = await MeetingService.checkAvailability(allAttendees, timeSlots);
 
       // Find participants with conflicts
       const participantsWithConflicts = [];
@@ -280,6 +285,9 @@ export class MeetingController {
       const { meetingId } = req.params;
       const updateData = req.body;
 
+      // Get the current meeting before update
+      const currentMeeting = await Meeting.findById(meetingId);
+
       const meeting = await Meeting.findByIdAndUpdate(
         meetingId,
         { ...updateData, updatedAt: new Date() },
@@ -295,6 +303,21 @@ export class MeetingController {
           success: false,
           message: "Meeting not found"
         });
+      }
+
+      // If status changed to completed or cancelled, clean up availability
+      if (updateData.status && (updateData.status === 'completed' || updateData.status === 'cancelled') && currentMeeting) {
+        const allAffectedUsers = [currentMeeting.host, ...currentMeeting.participants];
+        for (const userId of allAffectedUsers) {
+          for (const slot of currentMeeting.timeSlots) {
+            await Availability.deleteMany({
+              employeeId: userId,
+              startTime: new Date(slot.startTime),
+              endTime: new Date(slot.endTime),
+              reason: { $regex: `Meeting: ${currentMeeting.title}`, $options: 'i' }
+            });
+          }
+        }
       }
 
       res.json({
@@ -317,6 +340,48 @@ export class MeetingController {
       const { meetingId } = req.params;
       const { timeSlots, forceSchedule = false } = req.body;
 
+      // Get current meeting to get attendees
+      const currentMeeting = await Meeting.findById(meetingId);
+      if (!currentMeeting) {
+        return res.status(404).json({
+          success: false,
+          message: "Meeting not found"
+        });
+      }
+
+      // Get all attendees
+      const allAttendees = [...currentMeeting.participants.map((p: any) => p.toString())];
+      if (!allAttendees.includes(currentMeeting.host.toString())) {
+        allAttendees.push(currentMeeting.host.toString());
+      }
+
+      // Check availability for new time slots
+      const availabilityResults = await MeetingService.checkAvailability(allAttendees, timeSlots);
+
+      // Find attendees with conflicts
+      const attendeesWithConflicts = [];
+      for (let slotIndex = 0; slotIndex < availabilityResults.length; slotIndex++) {
+        const slotResults = availabilityResults[slotIndex];
+        for (const result of slotResults) {
+          if (result.status !== 'available') {
+            const employee = await mongoose.model('Employee').findById(result.employeeId);
+            if (employee) {
+              attendeesWithConflicts.push({
+                userId: result.employeeId,
+                userName: employee.name,
+                isAvailable: false,
+                reason: result.reason,
+                conflictingMeeting: result.conflictingMeetingId ? {
+                  title: 'Existing meeting',
+                  startTime: 'Check availability logs',
+                  endTime: 'Check availability logs'
+                } : undefined
+              });
+            }
+          }
+        }
+      }
+
       const { meeting, availabilityLogs } = await MeetingService.updateMeetingTimeSlots(
         meetingId,
         timeSlots,
@@ -326,7 +391,8 @@ export class MeetingController {
       res.json({
         success: true,
         data: meeting,
-        availabilityLogs
+        availabilityLogs,
+        conflicts: attendeesWithConflicts.length > 0 ? attendeesWithConflicts : undefined
       });
 
     } catch (error: any) {
@@ -354,6 +420,19 @@ export class MeetingController {
           success: false,
           message: "Meeting not found"
         });
+      }
+
+      // Clean up availability entries for participants and host
+      const allAffectedUsers = [meeting.host, ...meeting.participants];
+      for (const userId of allAffectedUsers) {
+        for (const slot of meeting.timeSlots) {
+          await Availability.deleteMany({
+            employeeId: userId,
+            startTime: new Date(slot.startTime),
+            endTime: new Date(slot.endTime),
+            reason: { $regex: `Meeting: ${meeting.title}`, $options: 'i' }
+          });
+        }
       }
 
       res.json({

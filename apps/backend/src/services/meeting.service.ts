@@ -13,6 +13,16 @@ export interface AvailabilityCheckResult {
 }
 
 export class MeetingService {
+  // Helper to get all attendees (participants + host)
+  private static getAllAttendees(meetingData: Partial<IMeeting>): string[] {
+    const attendees = meetingData.participants!.map((p: any) => p.toString());
+    const hostId = meetingData.host!.toString();
+    if (!attendees.includes(hostId)) {
+      attendees.push(hostId);
+    }
+    return attendees;
+  }
+
   // Check availability for participants at given time slots
   static async checkAvailability(
     participants: string[],
@@ -134,8 +144,9 @@ export class MeetingService {
             ? slot.endTime
             : new Date(slot.endTime).toISOString(),
       }));
+      const allAttendees = this.getAllAttendees(meetingData);
       const availabilityResults = await this.checkAvailability(
-        meetingData.participants!.map((p: any) => p.toString()),
+        allAttendees,
         timeSlotsForCheck
       );
 
@@ -168,6 +179,26 @@ export class MeetingService {
         }
       }
 
+      // Create availability entries for all attendees to mark slots as unavailable
+      for (const slot of meetingData.timeSlots!) {
+        for (const attendeeId of allAttendees) {
+          console.log('Creating UNAVAILABLE availability for attendee:', attendeeId, 'slot:', slot.startTime, 'to', slot.endTime);
+          await Availability.findOneAndUpdate(
+            {
+              employeeId: attendeeId,
+              startTime: new Date(slot.startTime),
+              endTime: new Date(slot.endTime),
+            },
+            {
+              status: "UNAVAILABLE",
+              reason: `Meeting: ${meeting.title}`,
+              createdBy: meeting.organizer,
+            },
+            { upsert: true, new: true, session }
+          );
+        }
+      }
+
       // If forceSchedule is true, create schedule entries that override conflicts
       if (forceSchedule) {
         await this.createOverridingSchedules(meeting, session);
@@ -188,14 +219,14 @@ export class MeetingService {
     meeting: IMeeting,
     session: mongoose.ClientSession
   ): Promise<void> {
-    const participants = meeting.participants.map((p) => p.toString());
+    const allAttendees = this.getAllAttendees(meeting);
 
     for (const slot of meeting.timeSlots) {
-      for (const participantId of participants) {
+      for (const attendeeId of allAttendees) {
         // Remove conflicting availability blocks
         await Availability.deleteMany(
           {
-            employeeId: participantId,
+            employeeId: attendeeId,
             startTime: { $lt: slot.endTime },
             endTime: { $gt: slot.startTime },
           },
@@ -205,7 +236,7 @@ export class MeetingService {
         // Remove conflicting schedules (except leave)
         await Schedule.deleteMany(
           {
-            employeeId: participantId,
+            employeeId: attendeeId,
             startTime: { $lt: slot.endTime },
             endTime: { $gt: slot.startTime },
             type: { $ne: "LEAVE" },
@@ -215,7 +246,7 @@ export class MeetingService {
 
         // Create new schedule entry for the meeting
         const scheduleEntry = new Schedule({
-          employeeId: participantId,
+          employeeId: attendeeId,
           created_by: meeting.organizer,
           source: "SYSTEM",
           type: "MEETING",
@@ -232,36 +263,16 @@ export class MeetingService {
 
   // Get meetings for a user based on their role and permissions
   static async getUserMeetings(userId: string, userRole?: UserRole, userDepartments?: string[]): Promise<IMeeting[]> {
-    let query: any = { status: { $ne: "cancelled" } };
-
-    if (!userRole) {
-      // If no role provided, fall back to direct involvement
-      query.$or = [
+    // For dashboard and user-specific meeting views, only return meetings where the user is directly involved
+    // This ensures time slots only show when the user is actually busy
+    const query: any = {
+      status: { $ne: "cancelled" },
+      $or: [
         { organizer: userId },
         { host: userId },
         { participants: userId }
-      ];
-    } else {
-      const userPermissions = ROLE_PERMISSIONS[userRole] || [];
-
-      if (userPermissions.includes('view_all_meetings')) {
-        // Admin and HR can see all meetings
-        query = { status: { $ne: "cancelled" } };
-      } else if (userPermissions.includes('view_department_meetings')) {
-        // Managers and employees can see meetings based on scope
-        query = {
-          status: { $ne: "cancelled" },
-          $or: [
-            { scope: 'general' }, // All general meetings
-            { scope: 'departments', departments: { $in: userDepartments || [] } } // Department-specific meetings
-            // Note: 'separate' meetings are only visible to admins/HR, not included here
-          ]
-        };
-      } else {
-        // No permissions, return empty array
-        return [];
-      }
-    }
+      ]
+    };
 
     return await Meeting.find(query)
       .populate("organizer", "name email")
@@ -294,6 +305,9 @@ export class MeetingService {
         throw new Error("Meeting not found");
       }
 
+      // Store old time slots for cleanup
+      const oldTimeSlots = meeting.timeSlots;
+
       // Update time slots
       meeting.timeSlots = newTimeSlots.map((slot) => ({
         date: slot.date,
@@ -305,9 +319,12 @@ export class MeetingService {
       // Remove old availability logs
       await MeetingAvailabilityLog.deleteMany({ meetingId }, { session });
 
+      // Get all attendees
+      const allAttendees = this.getAllAttendees(meeting);
+      console.log('All attendees for meeting:', meeting.title, allAttendees);
       // Check new availability
       const availabilityResults = await this.checkAvailability(
-        meeting.participants.map((p: any) => p.toString()),
+        allAttendees,
         newTimeSlots
       );
 
@@ -332,6 +349,37 @@ export class MeetingService {
 
           await log.save({ session });
           availabilityLogs.push(log);
+        }
+      }
+
+      // Remove old availability entries for old time slots
+      for (const oldSlot of oldTimeSlots) {
+        for (const attendeeId of allAttendees) {
+          await Availability.deleteMany({
+            employeeId: attendeeId,
+            startTime: oldSlot.startTime,
+            endTime: oldSlot.endTime,
+            reason: { $regex: `Meeting: ${meeting.title}` },
+          }, { session });
+        }
+      }
+
+      // Create new availability entries for new time slots
+      for (const newSlot of newTimeSlots) {
+        for (const attendeeId of allAttendees) {
+          await Availability.findOneAndUpdate(
+            {
+              employeeId: attendeeId,
+              startTime: new Date(newSlot.startTime),
+              endTime: new Date(newSlot.endTime),
+            },
+            {
+              status: "UNAVAILABLE",
+              reason: `Meeting: ${meeting.title}`,
+              createdBy: meeting.organizer,
+            },
+            { upsert: true, new: true, session }
+          );
         }
       }
 
