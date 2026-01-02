@@ -2,12 +2,14 @@ import React from 'react';
 import type { MeetingWizardFormData } from '@/constants/meetingWizard';
 import type { MeetingTimeSlot } from '@/types/meeting';
 import type { Employee } from '@/types/user';
+import type { IDepartment } from '@repo/types';
 
 interface StepReviewConfirmProps {
   formData: MeetingWizardFormData;
   selectedDate: Date | undefined;
   selectedSlots: MeetingTimeSlot[];
   employees: Employee[];
+  departments: IDepartment[];
   user: { _id?: string; name?: string } | null;
 }
 
@@ -16,6 +18,7 @@ export const StepReviewConfirm: React.FC<StepReviewConfirmProps> = ({
   selectedDate,
   selectedSlots,
   employees,
+  departments,
   user,
 }) => {
   return (
@@ -47,6 +50,20 @@ export const StepReviewConfirm: React.FC<StepReviewConfirmProps> = ({
           <div>
             <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Type</h4>
             <p className="text-sm mt-1">{formData.isVirtual ? "Virtual" : "In-Person"}</p>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Departments</h4>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {formData.departments.map(departmentId => {
+              const department = departments.find(d => d._id === departmentId);
+              return (
+                <span key={departmentId} className="bg-secondary/10 text-secondary px-2 py-1 rounded text-xs">
+                  {department?.departmentName || departmentId}
+                </span>
+              );
+            })}
           </div>
         </div>
 

@@ -34,7 +34,6 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
     hostId: "",
     participants: [],
     departments: [],
-    scope: 'general',
     location: "",
     isVirtual: false,
     agenda: "",
@@ -52,7 +51,6 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
           hostId: meetingToEdit.host || "",
           participants: meetingToEdit.participants || [],
           departments: meetingToEdit.departments || [],
-          scope: meetingToEdit.scope || 'general',
           location: meetingToEdit.location || "",
           isVirtual: meetingToEdit.isVirtual || false,
           agenda: meetingToEdit.agenda || "",
@@ -70,7 +68,6 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
           hostId: user?._id || "",
           participants: [],
           departments: [],
-          scope: 'general',
           location: "",
           isVirtual: false,
           agenda: "",
@@ -113,15 +110,6 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
       departments: prev.departments.includes(departmentId)
         ? prev.departments.filter(id => id !== departmentId)
         : [...prev.departments, departmentId]
-    }));
-  };
-
-  const handleMeetingScopeChange = (scope: 'general' | 'departments' | 'separate') => {
-    setFormData(prev => ({
-      ...prev,
-      scope,
-      // Clear departments if scope is not 'departments'
-      departments: scope === 'departments' ? prev.departments : []
     }));
   };
 
@@ -176,7 +164,7 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
 
   // Navigation
   const handleNext = () => {
-    if (canProceedToNextStep(currentStep, formData, selectedDate, selectedSlots) && currentStep < 7) {
+    if (canProceedToNextStep(currentStep, formData, selectedDate, selectedSlots) && currentStep < 6) {
       setCurrentStep((prev) => (prev + 1) as MeetingWizardStep);
     }
   };
@@ -206,8 +194,7 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
         organizer: user._id,
         host: formData.hostId,
         participants: formData.participants,
-        scope: formData.scope,
-        departments: formData.scope === 'departments' ? formData.departments : [],
+        departments: formData.departments,
         title: formData.title,
         agenda: formData.agenda,
         location: formData.location,
@@ -264,7 +251,6 @@ export const useMeetingWizard = ({ isOpen, meetingToEdit }: UseMeetingWizardProp
     handleSelectChange,
     handleParticipantToggle,
     handleDepartmentToggle,
-    handleMeetingScopeChange,
     handleSlotSelect,
     handleNext,
     handleBack,

@@ -1,13 +1,6 @@
 import React from 'react';
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { MeetingWizardFormData } from '@/constants/meetingWizard';
 
 interface StepMeetingTypeLocationProps {
@@ -30,46 +23,89 @@ export const StepMeetingTypeLocation: React.FC<StepMeetingTypeLocationProps> = (
         </p>
       </div>
 
-      {/* Meeting Type */}
-      <div>
-        <Label htmlFor="isVirtual">Meeting Type</Label>
-        <Select
-          value={formData.isVirtual ? "virtual" : "in-person"}
-          onValueChange={(value) => onSelectChange("isVirtual", value === "virtual")}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="in-person">In-Person Meeting</SelectItem>
-            <SelectItem value="virtual">Virtual Meeting</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <div className="space-y-6">
+        {/* Meeting Type */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Meeting Type</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => onSelectChange("isVirtual", false)}
+              className={`p-4 border rounded-lg text-left transition-all ${
+                !formData.isVirtual
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-4 h-4 rounded-full border-2 ${
+                  !formData.isVirtual ? "border-primary bg-primary" : "border-gray-300"
+                }`}>
+                  {!formData.isVirtual && (
+                    <div className="w-full h-full rounded-full bg-primary scale-50"></div>
+                  )}
+                </div>
+                <div>
+                  <div className="font-medium text-sm">In-Person Meeting</div>
+                  <div className="text-xs text-muted-foreground">Physical location</div>
+                </div>
+              </div>
+            </button>
 
-      {/* Location/Link */}
-      <div>
-        <Label htmlFor="location">
-          {formData.isVirtual ? "Meeting Link" : "Location"} *
-        </Label>
-        <Input
-          id="location"
-          name="location"
-          value={formData.location}
-          onChange={onInputChange}
-          placeholder={formData.isVirtual ? "Enter meeting link (e.g., Zoom, Teams)" : "Enter location or room name"}
-          className={!formData.location.trim() ? "border-destructive" : ""}
-        />
-        {!formData.location.trim() && (
-          <p className="text-xs text-destructive mt-1">
-            Please enter the {formData.isVirtual ? "meeting link" : "location"}.
-          </p>
-        )}
-        {formData.isVirtual && (
-          <p className="text-xs text-muted-foreground mt-1">
-            Make sure to include the full meeting link with access details.
-          </p>
-        )}
+            <button
+              type="button"
+              onClick={() => onSelectChange("isVirtual", true)}
+              className={`p-4 border rounded-lg text-left transition-all ${
+                formData.isVirtual
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-4 h-4 rounded-full border-2 ${
+                  formData.isVirtual ? "border-primary bg-primary" : "border-gray-300"
+                }`}>
+                  {formData.isVirtual && (
+                    <div className="w-full h-full rounded-full bg-primary scale-50"></div>
+                  )}
+                </div>
+                <div>
+                  <div className="font-medium text-sm">Virtual Meeting</div>
+                  <div className="text-xs text-muted-foreground">Online meeting</div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Location/Link */}
+        <div className="space-y-2">
+          <Label htmlFor="location" className="text-sm font-medium">
+            {formData.isVirtual ? "Meeting Link" : "Location"} *
+          </Label>
+          <Input
+            id="location"
+            name="location"
+            value={formData.location}
+            onChange={onInputChange}
+            placeholder={
+              formData.isVirtual
+                ? "Enter meeting link (e.g., Zoom, Teams)"
+                : "Enter location or room name"
+            }
+            className={`w-full ${!formData.location.trim() ? "border-destructive" : ""}`}
+          />
+          {!formData.location.trim() && (
+            <p className="text-xs text-destructive mt-1">
+              Please enter the {formData.isVirtual ? "meeting link" : "location"}.
+            </p>
+          )}
+          {formData.isVirtual && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Make sure to include the full meeting link with access details.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

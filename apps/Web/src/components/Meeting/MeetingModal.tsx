@@ -10,8 +10,7 @@ import {
   StepTimeSlots,
   StepReviewConfirm,
 } from "./steps";
-import type { Meeting } from "@/types/meeting";
-import { HostAndParticipants } from "./steps/HostAndParticipants";
+import type { Meeting } from "@repo/types";
 
 interface MeetingModalProps {
   isOpen: boolean;
@@ -41,7 +40,6 @@ export default function MeetingModal({
     handleSelectChange,
     handleParticipantToggle,
     handleDepartmentToggle,
-    handleMeetingScopeChange,
     handleSlotSelect,
     handleNext,
     handleBack,
@@ -83,28 +81,17 @@ export default function MeetingModal({
                 onHostChange={(value) => handleSelectChange("hostId", value)}
                 onParticipantToggle={handleParticipantToggle}
                 onDepartmentToggle={handleDepartmentToggle}
-                onMeetingScopeChange={handleMeetingScopeChange}
               />
             )}
 
             {currentStep === 2 && (
-              <HostAndParticipants
-                hostId={formData.hostId}
-                participants={formData.participants}
-                employees={employees}
-                onHostChange={(value) => handleSelectChange("hostId", value)}
-                onParticipantToggle={handleParticipantToggle}
-              />
-            )}
-
-            {currentStep === 3 && (
               <StepMeetingDetails
                 formData={formData}
                 onInputChange={handleInputChange}
               />
             )}
 
-            {currentStep === 4 && (
+            {currentStep === 3 && (
               <StepMeetingTypeLocation
                 formData={formData}
                 onSelectChange={handleSelectChange}
@@ -112,14 +99,14 @@ export default function MeetingModal({
               />
             )}
 
-            {currentStep === 5 && (
+            {currentStep === 4 && (
               <StepDateSelection
                 selectedDate={selectedDate}
                 onDateSelect={setSelectedDate}
               />
             )}
 
-            {currentStep === 6 && (
+            {currentStep === 5 && (
               <StepTimeSlots
                 selectedDate={selectedDate}
                 selectedSlots={selectedSlots}
@@ -127,12 +114,13 @@ export default function MeetingModal({
               />
             )}
 
-            {currentStep === 7 && (
+            {currentStep === 6 && (
               <StepReviewConfirm
                 formData={formData}
                 selectedDate={selectedDate}
                 selectedSlots={selectedSlots}
                 employees={employees}
+                departments={departments}
                 user={user}
               />
             )}
@@ -149,7 +137,7 @@ export default function MeetingModal({
             </Button>
 
             <div className="flex space-x-2">
-              {currentStep < 7 ? (
+              {currentStep < 6 ? (
                 <Button
                   type="button"
                   onClick={handleNext}

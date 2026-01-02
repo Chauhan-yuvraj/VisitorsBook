@@ -7,13 +7,12 @@ interface MeetingWizardProgressProps {
 
 export const MeetingWizardProgress: React.FC<MeetingWizardProgressProps> = ({ currentStep }) => {
   const steps = [
-    { number: 1, title: "Meeting Setup" },
-    { number: 2, title: "Host & Participants" },
-    { number: 3, title: "Meeting Details" },
-    { number: 4, title: "Type & Location" },
-    { number: 5, title: "Date Selection" },
-    { number: 6, title: "Time Slots" },
-    { number: 7, title: "Review & Confirm" },
+    { number: 1, title: "Host & Participants" },
+    { number: 2, title: "Meeting Details" },
+    { number: 3, title: "Type & Location" },
+    { number: 4, title: "Date Selection" },
+    { number: 5, title: "Time Slots" },
+    { number: 6, title: "Review & Confirm" },
   ] as const;
 
   return (

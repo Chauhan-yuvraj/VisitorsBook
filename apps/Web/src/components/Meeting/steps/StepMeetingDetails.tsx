@@ -22,46 +22,50 @@ export const StepMeetingDetails: React.FC<StepMeetingDetailsProps> = ({
         </p>
       </div>
 
-      {/* Title */}
-      <div>
-        <Label htmlFor="title">Meeting Title *</Label>
-        <Input
-          id="title"
-          name="title"
-          value={formData.title}
-          onChange={onInputChange}
-          placeholder="Enter meeting title"
-          className={!formData.title.trim() ? "border-destructive" : ""}
-        />
-        {!formData.title.trim() && (
-          <p className="text-xs text-destructive mt-1">Please enter a meeting title.</p>
-        )}
-      </div>
+      <div className="space-y-6">
+        {/* Title */}
+        <div className="space-y-2">
+          <Label htmlFor="title" className="text-sm font-medium">Meeting Title *</Label>
+          <Input
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={onInputChange}
+            placeholder="Enter meeting title"
+            className={`w-full ${!formData.title.trim() ? "border-destructive" : ""}`}
+          />
+          {!formData.title.trim() && (
+            <p className="text-xs text-destructive mt-1">Please enter a meeting title.</p>
+          )}
+        </div>
 
-      {/* Agenda */}
-      <div>
-        <Label htmlFor="agenda">Agenda</Label>
-        <Textarea
-          id="agenda"
-          name="agenda"
-          value={formData.agenda}
-          onChange={onInputChange}
-          placeholder="Meeting agenda or topics to discuss"
-          rows={4}
-        />
-      </div>
+        {/* Agenda */}
+        <div className="space-y-2">
+          <Label htmlFor="agenda" className="text-sm font-medium">Agenda</Label>
+          <Textarea
+            id="agenda"
+            name="agenda"
+            value={formData.agenda}
+            onChange={onInputChange}
+            placeholder="Meeting agenda or topics to discuss"
+            rows={4}
+            className="w-full resize-none"
+          />
+        </div>
 
-      {/* Remarks */}
-      <div>
-        <Label htmlFor="remarks">Remarks (Optional)</Label>
-        <Textarea
-          id="remarks"
-          name="remarks"
-          value={formData.remarks}
-          onChange={onInputChange}
-          placeholder="Any additional notes or instructions"
-          rows={3}
-        />
+        {/* Remarks */}
+        <div className="space-y-2">
+          <Label htmlFor="remarks" className="text-sm font-medium">Remarks (Optional)</Label>
+          <Textarea
+            id="remarks"
+            name="remarks"
+            value={formData.remarks}
+            onChange={onInputChange}
+            placeholder="Any additional notes or instructions"
+            rows={3}
+            className="w-full resize-none"
+          />
+        </div>
       </div>
     </div>
   );
