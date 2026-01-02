@@ -124,11 +124,15 @@ export class MeetingController {
       // Clear departments if scope is not 'departments'
       const finalDepartments = scope === "departments" ? departments : [];
 
+
       // Check availability first
+      const people = [host, ...participants];
       const availabilityResults = await MeetingService.checkAvailability(
-        participants,
+        people,
         timeSlots
       );
+
+      console.log("availabilityResults :", availabilityResults);
 
       // Find participants with conflicts
       const participantsWithConflicts = [];
@@ -204,7 +208,7 @@ export class MeetingController {
       console.error("Error creating meeting:", error);
       res.status(500).json({
         success: false,
-        message:  "Failed to create meeting !!",
+        message: "Failed to create meeting !!",
       });
     }
   }
@@ -286,7 +290,7 @@ export class MeetingController {
       console.error("Error fetching user meetings:", error);
       res.status(500).json({
         success: false,
-        message:  "Failed to fetch meetings !!!!",
+        message: "Failed to fetch meetings !!!!",
       });
     }
   }
